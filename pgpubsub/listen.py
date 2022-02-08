@@ -5,39 +5,57 @@ import pgtrigger
 from django.db import connection
 
 from pgpubsub.channel import (
-    CustomPayloadChannel,
-    TriggerPayloadChannel,
     Channel,
+    registry,
+    locate_channel,
 )
 from pgpubsub.notify import Notify
 
 
-def listen(channel_names=None):
-    if channel_names is None:
-        channels = Channel.registry
-    else:
-        channels = {name: Channel.get(name) for name in channel_names}
-    cursor = connection.cursor() # set isolation
-    for channel_name in channels:
-        print(f'Listening on {channel_name}')
-        cursor.execute('LISTEN {};'.format(channel_name))
-    pg_connection = connection.connection
+def listen(channels=None):
+    pg_connection = listen_to_channels(channels)
     while True:
         if select.select([pg_connection], [], [], 5) == ([], [], []):
             print('Timeout')
         else:
-            pg_connection.poll()
-            while pg_connection.notifies:
-                notification = pg_connection.notifies.pop(0)
-                channel_name = notification.channel
-                channel = channels.get(channel_name)
-                deserialized = channel.deserialize(notification.payload)
-                channel.callback(**deserialized)
+            process_notifications(pg_connection)
 
 
-def listener(channel_name: str=None):
+def listen_to_channels(channels=None):
+    if channels is None:
+        channels = registry
+    else:
+        channels = [locate_channel(channel) for channel in channels]
+        channels = {
+            channel: callbacks for channel, callbacks in registry.items()
+            if issubclass(channel, tuple(channels))
+        }
+    if not channels:
+        raise Exception('No channels found!')
+    cursor = connection.cursor()
+    for channel in channels:
+        name = channel.name()
+        print(f'Listening on {name}')
+        cursor.execute(f'LISTEN {name};')
+    return connection.connection
+
+
+def process_notifications(pg_connection):
+    pg_connection.poll()
+    while pg_connection.notifies:
+        notification = pg_connection.notifies.pop(0)
+        channel_name = notification.channel
+        print(f'Received notification on {channel_name}')
+        channel_cls, callbacks = Channel.get(channel_name)
+        channel = channel_cls.build_from_payload(
+            notification.payload, callbacks)
+        channel.execute_callbacks()
+
+
+def listener(channel):
+    channel = locate_channel(channel)
     def _listen(callback):
-        CustomPayloadChannel.register(callback, channel_name)
+        channel.register(callback)
         @wraps(callback)
         def wrapper(*args, **kwargs):
             return callback(*args, **kwargs)
@@ -45,27 +63,33 @@ def listener(channel_name: str=None):
     return _listen
 
 
-def post_insert_listener(model, channel_name=None):
+def post_insert_listener(channel):
     return trigger_listener(
-        model,
+        channel,
         trigger=Notify(
-            name=channel_name,
+            name=channel.name(),
             when=pgtrigger.After,
             operation=pgtrigger.Insert,
         ),
-        channel_name=channel_name,
     )
 
 
-def trigger_listener(
-    model,
-    trigger,
-    channel_name: str=None,
-):
+def post_delete_listener(channel):
+    return trigger_listener(
+        channel,
+        trigger=Notify(
+            name=channel.name(),
+            when=pgtrigger.After,
+            operation=pgtrigger.Delete,
+        ),
+    )
+
+
+def trigger_listener(channel, trigger):
+    channel = locate_channel(channel)
     def _trig_listener(callback):
-        TriggerPayloadChannel.register(callback, channel_name)
-        trigger.register(model)
-        trigger.install(model)
+        channel.register(callback)
+        pgtrigger.register(trigger)(channel.model)
         @wraps(callback)
         def wrapper(*args, **kwargs):
             return callback(*args, **kwargs)

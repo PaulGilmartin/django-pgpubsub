@@ -32,7 +32,11 @@ class Post(models.Model):
     rating = models.DecimalField(null=True, decimal_places=20, max_digits=40)
 
     @classmethod
-    def fetch(cls, pk):
-        post = cls.objects.get(pk=pk)
-        notify('post_reads_per_date', post_id=pk, date=datetime.date.today())
+    def fetch(cls, post_id):
+        post = cls.objects.get(pk=post_id)
+        notify(
+            'pgpubsub.tests.channels.PostReads',
+            model_id=post_id,
+            date=datetime.date.today(),
+        )
         return post

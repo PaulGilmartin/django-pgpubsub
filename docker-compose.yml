@@ -1,0 +1,32 @@
+
+version: '3.7'
+
+
+# Each service corresponds to a distinct container running within our Docker host:
+# web for the Django local server, db for the PostgresSQL database
+
+services:
+  web:    # Can specify which service we want to use by docker-compose exec [service (e.g. web)] bash
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: python /django-pgpubsub/manage.py runserver 0.0.0.0:8000
+    volumes: # automatically syncs Docker filesystem with out local one, meaning we don't need to rebuild when we change a file
+      - .:/django-pgpubsub
+    ports:
+      - 8000:8000
+    depends_on:
+      - db
+    env_file:
+      - ./.env.dev
+  db:
+    image: postgres:11
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+
+volumes:
+  postgres_data:
