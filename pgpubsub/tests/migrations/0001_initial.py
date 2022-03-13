@@ -17,7 +17,12 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Author',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('name', models.TextField()),
                 ('age', models.IntegerField(null=True)),
                 ('active', models.BooleanField(default=True)),
@@ -26,7 +31,12 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Media',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('name', models.TextField()),
                 ('content_type', models.TextField(null=True)),
                 ('size', models.BigIntegerField(null=True)),
@@ -35,22 +45,39 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Post',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('content', models.TextField()),
                 ('date', models.DateTimeField()),
                 ('rating', models.DecimalField(decimal_places=20, max_digits=40, null=True)),
-                ('author', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='entries', to='tests.author')),
+                (
+                    'author',
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name='entries',
+                        to='tests.author',
+                    ),
+                ),
                 ('files', models.ManyToManyField(to='tests.Media')),
             ],
         ),
         migrations.AddField(
             model_name='author',
             name='profile_picture',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.PROTECT, to='tests.media'),
+            field=models.ForeignKey(
+                null=True, on_delete=django.db.models.deletion.PROTECT, to='tests.media'
+            ),
         ),
         migrations.AddField(
             model_name='author',
             name='user',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.PROTECT, to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(
+                null=True, on_delete=django.db.models.deletion.PROTECT, to=settings.AUTH_USER_MODEL
+            ),
         ),
     ]

@@ -217,6 +217,29 @@ argon2 = ["argon2-cffi (>=19.1.0)"]
 bcrypt = ["bcrypt"]
 
 [[package]]
+name = "django-pgconnection"
+version = "1.0.2"
+description = "Route postgres connections and hook into cursor execution"
+category = "main"
+optional = false
+python-versions = ">=3.6.2,<4"
+
+[package.dependencies]
+django = ">=2"
+
+[[package]]
+name = "django-pgtrigger"
+version = "2.4.1"
+description = "Postgres trigger support integrated with Django models."
+category = "main"
+optional = false
+python-versions = ">=3.7.0,<4"
+
+[package.dependencies]
+django = ">=2"
+django-pgconnection = ">=1.0.1"
+
+[[package]]
 name = "docutils"
 version = "0.17.1"
 description = "Docutils -- Python Documentation Utilities"
@@ -653,6 +676,20 @@ pytest = ">=5.0.0"
 python-dotenv = ">=0.9.1"
 
 [[package]]
+name = "pytest-mock"
+version = "3.7.0"
+description = "Thin-wrapper around the mock package for easier use with pytest"
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+pytest = ">=5.0"
+
+[package.extras]
+dev = ["pre-commit", "tox", "pytest-asyncio"]
+
+[[package]]
 name = "python-dateutil"
 version = "2.8.2"
 description = "Extensions to the standard Python datetime module"
@@ -1004,7 +1041,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.0,<4"
-content-hash = "c6ee9a2d957195cf0e69811e2dba6844ba63a1a147161ff1769177b49e618c39"
+content-hash = "06c61e01d2aa4404e15bca4261d1cec392a77fc12973f47a36c8569377351930"
 
 [metadata.files]
 alabaster = [
@@ -1121,6 +1158,14 @@ dj-database-url = [
 django = [
     {file = "Django-3.2.12-py3-none-any.whl", hash = "sha256:9b06c289f9ba3a8abea16c9c9505f25107809fb933676f6c891ded270039d965"},
     {file = "Django-3.2.12.tar.gz", hash = "sha256:9772e6935703e59e993960832d66a614cf0233a1c5123bc6224ecc6ad69e41e2"},
+]
+django-pgconnection = [
+    {file = "django-pgconnection-1.0.2.tar.gz", hash = "sha256:1c012e789cd65bee1d514de6a4b3f90c888e599c3c2be195e7bb3627923bb7f3"},
+    {file = "django_pgconnection-1.0.2-py3-none-any.whl", hash = "sha256:51ea5943faaa4aa4a2f953586b925ecddec852b009c004ee0b5de93d5ae162f7"},
+]
+django-pgtrigger = [
+    {file = "django-pgtrigger-2.4.1.tar.gz", hash = "sha256:0c370d1bb44361faf9948cec67a0a983885ba8e36da9416aad8fda3b69fea992"},
+    {file = "django_pgtrigger-2.4.1-py3-none-any.whl", hash = "sha256:24938353f60898a57bf7ca6371f2f565fc473f506781c32719bd1538115d637e"},
 ]
 docutils = [
     {file = "docutils-0.17.1-py2.py3-none-any.whl", hash = "sha256:cf316c8370a737a022b72b56874f6602acf974a37a9fba42ec2876387549fc61"},
@@ -1368,6 +1413,10 @@ pytest-django = [
 pytest-dotenv = [
     {file = "pytest-dotenv-0.5.2.tar.gz", hash = "sha256:2dc6c3ac6d8764c71c6d2804e902d0ff810fa19692e95fe138aefc9b1aa73732"},
     {file = "pytest_dotenv-0.5.2-py3-none-any.whl", hash = "sha256:40a2cece120a213898afaa5407673f6bd924b1fa7eafce6bda0e8abffe2f710f"},
+]
+pytest-mock = [
+    {file = "pytest-mock-3.7.0.tar.gz", hash = "sha256:5112bd92cc9f186ee96e1a92efc84969ea494939c3aead39c50f421c4cc69534"},
+    {file = "pytest_mock-3.7.0-py3-none-any.whl", hash = "sha256:6cff27cec936bf81dc5ee87f07132b807bcda51106b5ec4b90a04331cba76231"},
 ]
 python-dateutil = [
     {file = "python-dateutil-2.8.2.tar.gz", hash = "sha256:0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86"},

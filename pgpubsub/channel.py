@@ -1,9 +1,9 @@
-import datetime
-import inspect
-import json
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
+import datetime
+import inspect
+import json
 from pydoc import locate
 
 import django
@@ -15,7 +15,6 @@ registry = defaultdict(list)
 
 @dataclass
 class _Channel:
-
     def __post_init__(self):
         self.callbacks = []
 
@@ -23,7 +22,7 @@ class _Channel:
     def name(cls):
         # TODO: check channel name limits
         module_name = inspect.getmodule(cls).__name__
-        name =  f'{module_name}_{cls.__name__}'
+        name = f'{module_name}_{cls.__name__}'
         # TODO: pg_notify accepts ., but LISTEN does not.
         # What's the best way to build a channel name?
         name = name.replace('.', '_')
@@ -53,8 +52,7 @@ class _Channel:
 
     @property
     def signature(self):
-        return {k: v for k, v in self.__dict__.items()
-                if k in self.__dataclass_fields__}
+        return {k: v for k, v in self.__dict__.items() if k in self.__dataclass_fields__}
 
     def execute_callbacks(self):
         for callback in self.callbacks:
@@ -63,7 +61,6 @@ class _Channel:
 
 @dataclass
 class Channel(_Channel):
-
     @classmethod
     def deserialize(cls, payload):
         payload = json.loads(payload)
@@ -76,16 +73,13 @@ class Channel(_Channel):
             if origin_type is dict:
                 key_type, val_type = kwarg_type.__args__
                 deserialized_val = {
-                    cls._deserialize_arg(key, key_type):
-                        cls._deserialize_arg(val, val_type)
+                    cls._deserialize_arg(key, key_type): cls._deserialize_arg(val, val_type)
                     for key, val in val.items()
                 }
             elif origin_type in (list, tuple, set):
-                element_type, = kwarg_type.__args__
-                deserialized_val = origin_type(
-                    cls._deserialize_arg(x, element_type) for x in val)
-            kwargs[kwarg_name] = cls._deserialize_arg(
-                deserialized_val, origin_type)
+                (element_type,) = kwarg_type.__args__
+                deserialized_val = origin_type(cls._deserialize_arg(x, element_type) for x in val)
+            kwargs[kwarg_name] = cls._deserialize_arg(deserialized_val, origin_type)
         return kwargs
 
     def notify(self):
@@ -104,7 +98,8 @@ class Channel(_Channel):
             origin_type = getattr(kwarg_type, '__origin__', kwarg_type)
             if origin_type is dict:
                 serialized_val = {
-                    self._date_serial(k): self._date_serial(v) for k, v in val.items()}
+                    self._date_serial(k): self._date_serial(v) for k, v in val.items()
+                }
             elif origin_type in (list, tuple, set):
                 serialized_val = [self._date_serial(x) for x in val]
             serialized_kwargs[kwarg] = serialized_val
