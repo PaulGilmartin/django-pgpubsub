@@ -1,5 +1,5 @@
-import datetime
 from dataclasses import dataclass
+import datetime
 
 from pgpubsub.channel import Channel, TriggerChannel
 from pgpubsub.tests.models import Author, Post
