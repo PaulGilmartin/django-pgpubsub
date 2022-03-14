@@ -1,5 +1,5 @@
 version: "3.3"
-   
+
 services:
   db:
     image: postgres:13
@@ -10,8 +10,12 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
   app:
-    image: opus10/circleci-public-django-app
+    image: django-pgpubsub_app # opus10/circleci-public-django-app
+    volumes:
+      - ./:/django-pgpubsub:delegated
     environment:
       - DATABASE_URL=postgres://postgres:postgres@db:5432/postgres
+    entrypoint:
+      - "/django-pgpubsub/docker_entrypoint.sh"
     depends_on:
       - db

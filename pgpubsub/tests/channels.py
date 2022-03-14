@@ -1,5 +1,5 @@
-import datetime
 from dataclasses import dataclass
+import datetime
 
 from pgpubsub.channel import Channel, TriggerChannel
 from pgpubsub.tests.models import Author, Post
@@ -20,8 +20,10 @@ class PostReads(Reads):
 @dataclass
 class AuthorTriggerChannel(TriggerChannel):
     model = Author
+    process_once = True
 
 
 @dataclass
 class PostTriggerChannel(TriggerChannel):
     model = Post
+    process_once = True

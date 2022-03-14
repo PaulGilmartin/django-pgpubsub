@@ -1,33 +1,42 @@
-import datetime
-import inspect
-import json
+import uuid
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
+import datetime
+import inspect
+import json
 from pydoc import locate
 
 import django
 from django.apps import apps
 from django.db import connection
 
+
 registry = defaultdict(list)
 
 
 @dataclass
 class _Channel:
+    process_once = False
 
     def __post_init__(self):
         self.callbacks = []
+        self.uuid = str(uuid.uuid4())
 
     @classmethod
     def name(cls):
         # TODO: check channel name limits
         module_name = inspect.getmodule(cls).__name__
-        name =  f'{module_name}_{cls.__name__}'
+        name = f'{module_name}_{cls.__name__}'
         # TODO: pg_notify accepts ., but LISTEN does not.
         # What's the best way to build a channel name?
         name = name.replace('.', '_')
         return name.lower()
+
+    @classmethod
+    def path(cls):
+        module_name = inspect.getmodule(cls).__name__
+        return f'{module_name}.{cls.__name__}'
 
     @classmethod
     def get(cls, name):
@@ -42,7 +51,9 @@ class _Channel:
     @classmethod
     @abstractmethod
     def deserialize(cls, payload):
-        return
+        if isinstance(payload, str):
+            payload = json.loads(payload)
+        return payload
 
     @classmethod
     def build_from_payload(cls, notification_payload, callbacks):
@@ -63,10 +74,9 @@ class _Channel:
 
 @dataclass
 class Channel(_Channel):
-
     @classmethod
     def deserialize(cls, payload):
-        payload = json.loads(payload)
+        payload = super().deserialize(payload)
         serialized_kwargs = payload['kwargs']
         kwargs = {}
         for kwarg_name, val in serialized_kwargs.items():
@@ -76,27 +86,16 @@ class Channel(_Channel):
             if origin_type is dict:
                 key_type, val_type = kwarg_type.__args__
                 deserialized_val = {
-                    cls._deserialize_arg(key, key_type):
-                        cls._deserialize_arg(val, val_type)
+                    cls._deserialize_arg(key, key_type): cls._deserialize_arg(val, val_type)
                     for key, val in val.items()
                 }
             elif origin_type in (list, tuple, set):
-                element_type, = kwarg_type.__args__
-                deserialized_val = origin_type(
-                    cls._deserialize_arg(x, element_type) for x in val)
-            kwargs[kwarg_name] = cls._deserialize_arg(
-                deserialized_val, origin_type)
+                (element_type,) = kwarg_type.__args__
+                deserialized_val = origin_type(cls._deserialize_arg(x, element_type) for x in val)
+            kwargs[kwarg_name] = cls._deserialize_arg(deserialized_val, origin_type)
         return kwargs
 
-    def notify(self):
-        serialized = self._serialize()
-        with connection.cursor() as cursor:
-            name = self.name()
-            print(f'Notifying channel {self.name()} with payload {serialized}')
-            cursor.execute(f"select pg_notify('{name}', '{serialized}');")
-        return serialized
-
-    def _serialize(self):
+    def serialize(self):
         serialized_kwargs = {}
         for kwarg, val in self.signature.items():
             serialized_val = val
@@ -104,11 +103,15 @@ class Channel(_Channel):
             origin_type = getattr(kwarg_type, '__origin__', kwarg_type)
             if origin_type is dict:
                 serialized_val = {
-                    self._date_serial(k): self._date_serial(v) for k, v in val.items()}
+                    self._date_serial(k): self._date_serial(v) for k, v in val.items()
+                }
             elif origin_type in (list, tuple, set):
                 serialized_val = [self._date_serial(x) for x in val]
             serialized_kwargs[kwarg] = serialized_val
-        return json.dumps({'kwargs': serialized_kwargs}, default=self._date_serial)
+        return json.dumps(
+            {'kwargs': serialized_kwargs, 'pgpubsub_notification_uuid': self.uuid},
+            default=self._date_serial,
+        )
 
     @staticmethod
     def _date_serial(obj):
@@ -126,7 +129,7 @@ class Channel(_Channel):
 
 class TriggerPayload:
     def __init__(self, payload):
-        self._json_payload = json.loads(payload)
+        self._json_payload = payload
         self._model = apps.get_model(
             app_label=self._json_payload['app'],
             model_name=self._json_payload['model'],
@@ -153,6 +156,7 @@ class TriggerChannel(_Channel):
 
     @classmethod
     def deserialize(cls, payload):
+        payload = super().deserialize(payload)
         trigger_payload = TriggerPayload(payload)
         return {'old': trigger_payload.old, 'new': trigger_payload.new}
 

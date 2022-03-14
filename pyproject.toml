@@ -50,6 +50,7 @@ documentation = "https://django-pgpubsub.readthedocs.io"
 [tool.poetry.dependencies]
 python = ">=3.7.0,<4"
 django = ">=2"
+django-pgtrigger = ">=2.4.0"
 
 [tool.poetry.dev-dependencies]
 black = "21.5b1"
@@ -69,6 +70,7 @@ pytest = "7.0.0"
 pytest-cov = "3.0.0"
 pytest-dotenv = "0.5.2"
 pytest-django = "4.5.2"
+pytest-mock = "3.7.0"
 requests = "2.25.1"
 Sphinx = "4.4.0"
 sphinx-rtd-theme = "1.0.0"
