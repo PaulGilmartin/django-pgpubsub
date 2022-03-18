@@ -1,0 +1,11 @@
+FROM python:3.7
+
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+WORKDIR /pgpubsub
+
+COPY Pipfile Pipfile.lock /pgpubsub/
+RUN pip install --upgrade pip
+RUN pip install pipenv && pipenv install --system
+COPY . /pgpubsub/

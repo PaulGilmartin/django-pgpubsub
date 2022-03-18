@@ -252,6 +252,102 @@ associate a ``Post`` to it.
 `View the django-pgpubsub docs here
 <https://django-pgpubsub.readthedocs.io/>`_.
 
+
+Ensuring Notifications Do Not Get Lost
+======================================
+
+Scenarios in which a notification could end up not being
+processed completely:
+
+1. The notification is sent to a channel which is not listening.
+   This could happen for a few reasons:
+    a) The listener was never started.
+    b) The listener was down temporarily during a deployment
+      window.
+
+2. The notification is picked up by a listener, but the listener
+   function fails whilst processing the notification.
+
+3. (Unsure if actually possible) Could it be that the action
+    which created the notification is successful, but the
+    NOTIFY command fails to actually send the notification?
+    Hard to see how - if the NOTIFY failed, then surely
+    the transaction would be rolled back/process would be
+    terminated (and hence the user action would fail)?
+    I suppose if someone had weird exception handling around
+    the notify command this could happen. It is not like
+    connecting to rabbit MQ though where the connection
+    can fail and the user action still goes through -
+    the NOTIFY is only sent after the transaction ends
+    and uses the same db connection.
+
+
+
+Solving the problem of when no one is listening
+===============================================
+
+Let's consider a client with the following set-up:
+
+1. Two web servers, P (primary) and S (secondary).
+2. A single postgres db.
+3. A process ``listen`` process running on P listening to
+   two channels, ``PostReads`` and ``AuthorTriggerChannel``.
+
+
+Idea 1 : Have a dedicated "backup" channel which is purely
+dedicated to collecting notifications from all registered
+channels and storing them in the db. These can later be
+replayed.
+Whenever a notification is sent to a channel, the same notification
+is sent to the backup channel.
+A notification is also sent to the backup channel whenever the listener
+process fails to fully process a notification. This notification would
+be marked as "failed" or something. Could also send whenever it actually
+does process the notification, marking the notification as complete.
+
+
+
+Idea 2: Two processes can be listening to the same channel without
+the fear of the same notification being processed more than once.
+If this was possible, the idea of a backup channel may be obsolete,
+as then we could just use this listening processes to also store
+notifications.
+
+Couple of ways to go here:
+- Skip lock: https://spin.atomicobject.com/2021/02/04/redis-postgresql/
+  This would require saving the notification in the user's thread, hence
+  hurting performance a small amount. It seems like it would also
+  require more. It would also involve polling the db for unused jobs,
+  which kind of negates the cheap polling we get.
+- Advisory locks seem a bit cheaper? Not sure if as good though?
+
+
+Scenario 1: We wish to stop and restart the listen process for a code update
+without missing any notifications
+----------------------------------------------------------------------------
+
+- Using Idea 1: Have backup channel running on P and S. Bring down
+  P and S one by one.
+
+- Using Idea 2: Have same ``listen`` process running on P and S. Deploy
+  code to P and S one by one: bring listen process down on S first,
+  deploy code to S, bring back up on S. Now do the same on P.
+
+
+
+Scenario 2: A bug in the code means the listen process fails whenever a
+notification is received via the ``AuthorTriggerChannel``. We want to
+replay the failed notifications later.
+-----------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
 Installation
 ============
 

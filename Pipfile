@@ -1,0 +1,35 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+django = "==3.2"
+black = "21.5b1"
+dj-database-url = "0.5.0"
+flake8 = "3.9.2"
+flake8-bugbear = "21.4.3"
+flake8-comprehensions = "3.5.0"
+flake8-import-order = "0.18.1"
+flake8-logging-format = "0.6.0"
+flake8-mutable = "1.2.0"
+packaging = "19.2"
+pip = "*"
+pre-commit = "2.13.0"
+psycopg2-binary = "2.8.6"
+pytest = "6.2.4"
+pytest-cov = "2.12.0"
+pytest-dotenv = "0.5.2"
+pytest-django = "4.3.0"
+requests = "2.25.1"
+Sphinx = "4.0.2"
+sphinx-rtd-theme = "0.5.2"
+temple = "*"
+tox = "3.23.1"
+zipp = "3.4.1"
+django-pgtrigger = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"
