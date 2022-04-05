@@ -6,13 +6,13 @@ from django.db import models
 MAX_POSTGRES_CHANNEL_LENGTH = 63
 
 class Notification(models.Model):
-    creation_datetime = models.DateTimeField(auto_now_add=True)
+    creation_datetime = models.DateTimeField(auto_now_add=True) # index this field
     channel = models.CharField(
         db_index=True,
         max_length=MAX_POSTGRES_CHANNEL_LENGTH,
     )
-    payload = models.JSONField()
-    uuid = models.UUIDField(db_index=True)
+    payload = models.JSONField()  # is it worth considering a gin index here?
+    uuid = models.UUIDField(db_index=True) # remove this field
 
     def __repr__(self):
         return (

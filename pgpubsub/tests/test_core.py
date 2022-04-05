@@ -174,13 +174,3 @@ def test_author_bulk_insert_notify(pg_connection):
     post_authors = Post.objects.values_list('author_id', flat=True)
     assert [author.pk for author in authors] == list(post_authors)
 
-
-@pytest.mark.django_db(transaction=True)
-def test_post_delete_notify(pg_connection, mocker):
-    mock_email = mocker.patch('pgpubsub.tests.listeners.email')
-    author = Author.objects.create(name='Billy')
-    process_notifications(pg_connection)
-    assert 1 == Post.objects.count()
-    Post.objects.all().delete()
-    process_notifications(pg_connection)
-    mock_email.assert_called_with(author)

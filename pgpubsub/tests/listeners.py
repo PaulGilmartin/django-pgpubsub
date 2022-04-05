@@ -1,11 +1,20 @@
+import multiprocessing
 import time
 from collections import defaultdict
 import datetime
 
 from django.db.transaction import atomic
 
-from pgpubsub.listen import listener, post_delete_listener, post_insert_listener
-from pgpubsub.tests.channels import AuthorTriggerChannel, PostReads, PostTriggerChannel
+from pgpubsub.listen import (
+    listener,
+    post_delete_listener,
+    post_insert_listener,
+)
+from pgpubsub.tests.channels import (
+    AuthorTriggerChannel,
+    PostReads,
+    PostTriggerChannel,
+)
 from pgpubsub.tests.models import Author, Post
 
 post_reads_per_date_cache = defaultdict(dict)

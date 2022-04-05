@@ -10,18 +10,18 @@ from pydoc import locate
 import django
 from django.apps import apps
 from django.db import connection
-
+from django.utils import timezone
 
 registry = defaultdict(list)
 
 
 @dataclass
 class _Channel:
-    process_once = False
+    lock_notifications = False
 
     def __post_init__(self):
         self.callbacks = []
-        self.uuid = str(uuid.uuid4())
+        self.creation_datetime = timezone.now()  # make sure utc
 
     @classmethod
     def name(cls):
@@ -109,7 +109,9 @@ class Channel(_Channel):
                 serialized_val = [self._date_serial(x) for x in val]
             serialized_kwargs[kwarg] = serialized_val
         return json.dumps(
-            {'kwargs': serialized_kwargs, 'pgpubsub_notification_uuid': self.uuid},
+            {'kwargs': serialized_kwargs,
+             'pgpubsub_notification_creation_datetime': self.creation_datetime,
+             },
             default=self._date_serial,
         )
 

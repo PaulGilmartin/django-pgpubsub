@@ -1,4 +1,5 @@
 import json
+import multiprocessing
 from functools import wraps
 import select
 
@@ -20,9 +21,17 @@ def listen(channels=None):
     pg_connection = listen_to_channels(channels)
     while True:
         if select.select([pg_connection], [], [], 1) == ([], [], []):
-            print('Timeout')
+            print('Timeout\n')
         else:
-            process_notifications(pg_connection)
+            try:
+                process_notifications(pg_connection)
+            except Exception:
+                print('Encountered exception')
+                print('Restarting process')
+                process = multiprocessing.Process(
+                    target=listen, args=(channels,))
+                process.start()
+                raise
 
 
 def listen_to_channels(channels=None):
@@ -53,24 +62,30 @@ def process_notifications(pg_connection):
             f'Received notification on {notification.channel}')
         with transaction.atomic():
             payload = json.loads(notification.payload)
-            uuid = payload['pgpubsub_notification_uuid']
+            creation_datetime = payload[
+                'pgpubsub_notification_creation_datetime']
             channel_cls, callbacks = Channel.get(notification.channel)
-            if channel_cls.process_once:
-                try:
-                    notification = (
-                        Notification.objects.select_for_update(
-                            skip_locked=True).get(
-                                uuid=uuid, channel=notification.channel)
-                    )
-                except Notification.DoesNotExist:
-                    print(f'Could not obtain a lock on {uuid}')
+            if channel_cls.lock_notifications:
+                channel_name = notification.channel
+                notification = (
+                    Notification.objects.select_for_update(
+                        skip_locked=True).filter(
+                        creation_datetime=creation_datetime,
+                        channel=channel_name,
+                        payload=notification.payload,
+                    ).first()
+                )
+                if notification is None:
+                    print(f'Could not obtain a lock on notification'
+                          f'created at {creation_datetime} '
+                          f'sent to channel {channel_name}')
                     print('\n')
                     continue
                 else:
                     print(f'Obtained lock on {notification}')
             channel = channel_cls.build_from_payload(payload, callbacks)
             channel.execute_callbacks()
-            if channel_cls.process_once:
+            if channel_cls.lock_notifications:
                 notification.delete()
             print('\n')
             pg_connection.poll()
@@ -127,7 +142,7 @@ def post_delete_listener(channel):
 
 
 def _trigger_action_listener(channel, when, operation):
-    notify_cls = ProcessOnceNotify if channel.process_once else Notify
+    notify_cls = ProcessOnceNotify if channel.lock_notifications else Notify
     return trigger_listener(
         channel,
         trigger=notify_cls(
