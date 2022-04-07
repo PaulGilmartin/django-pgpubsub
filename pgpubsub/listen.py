@@ -14,7 +14,7 @@ from pgpubsub.channel import (
     registry,
 )
 from pgpubsub.models import Notification
-from pgpubsub.notify import Notify, ProcessOnceNotify
+from pgpubsub.notify import Notify, LockableNotify
 
 
 def listen(channels=None):
@@ -61,29 +61,25 @@ def process_notifications(pg_connection):
         print(
             f'Received notification on {notification.channel}')
         with transaction.atomic():
-            payload = json.loads(notification.payload)
-            creation_datetime = payload[
-                'pgpubsub_notification_creation_datetime']
             channel_cls, callbacks = Channel.get(notification.channel)
             if channel_cls.lock_notifications:
                 channel_name = notification.channel
                 notification = (
                     Notification.objects.select_for_update(
                         skip_locked=True).filter(
-                        creation_datetime=creation_datetime,
                         channel=channel_name,
                         payload=notification.payload,
                     ).first()
                 )
                 if notification is None:
                     print(f'Could not obtain a lock on notification'
-                          f'created at {creation_datetime} '
-                          f'sent to channel {channel_name}')
+                          f'{notification} sent to channel {channel_name}')
                     print('\n')
                     continue
                 else:
                     print(f'Obtained lock on {notification}')
-            channel = channel_cls.build_from_payload(payload, callbacks)
+            channel = channel_cls.build_from_payload(
+                notification.payload, callbacks)
             channel.execute_callbacks()
             if channel_cls.lock_notifications:
                 notification.delete()
@@ -142,7 +138,7 @@ def post_delete_listener(channel):
 
 
 def _trigger_action_listener(channel, when, operation):
-    notify_cls = ProcessOnceNotify if channel.lock_notifications else Notify
+    notify_cls = LockableNotify if channel.lock_notifications else Notify
     return trigger_listener(
         channel,
         trigger=notify_cls(

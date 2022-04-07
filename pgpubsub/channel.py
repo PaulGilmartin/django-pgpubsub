@@ -1,4 +1,3 @@
-import uuid
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
@@ -10,7 +9,7 @@ from pydoc import locate
 import django
 from django.apps import apps
 from django.db import connection
-from django.utils import timezone
+
 
 registry = defaultdict(list)
 
@@ -21,7 +20,6 @@ class _Channel:
 
     def __post_init__(self):
         self.callbacks = []
-        self.creation_datetime = timezone.now()  # make sure utc
 
     @classmethod
     def name(cls):
@@ -109,9 +107,7 @@ class Channel(_Channel):
                 serialized_val = [self._date_serial(x) for x in val]
             serialized_kwargs[kwarg] = serialized_val
         return json.dumps(
-            {'kwargs': serialized_kwargs,
-             'pgpubsub_notification_creation_datetime': self.creation_datetime,
-             },
+            {'kwargs': serialized_kwargs},
             default=self._date_serial,
         )
 
