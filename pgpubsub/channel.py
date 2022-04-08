@@ -6,6 +6,7 @@ import datetime
 import inspect
 import json
 from pydoc import locate
+from typing import Callable, Dict, Union, List
 
 import django
 from django.apps import apps
@@ -36,24 +37,28 @@ class BaseChannel:
         return f'pgpubsub_{model_hash}'
 
     @classmethod
-    def get(cls, name):
+    def get(cls, name: str):
         for channel_cls, callbacks in registry.items():
             if channel_cls.listen_safe_name() == name:
                 return channel_cls, callbacks
 
     @classmethod
-    def register(cls, callback):
+    def register(cls, callback: Callable):
         registry[cls].append(callback)
 
     @classmethod
     @abstractmethod
-    def deserialize(cls, payload):
+    def deserialize(cls, payload: Union[Dict, str]):
         if isinstance(payload, str):
             payload = json.loads(payload)
         return payload
 
     @classmethod
-    def build_from_payload(cls, notification_payload, callbacks):
+    def build_from_payload(
+            cls,
+            notification_payload: Union[Dict, str],
+            callbacks: List[Callable],
+    ):
         deserialized = cls.deserialize(notification_payload)
         channel = cls(**deserialized)
         channel.callbacks.extend(callbacks)
@@ -73,7 +78,7 @@ class BaseChannel:
 class Channel(BaseChannel):
 
     @classmethod
-    def deserialize(cls, payload):
+    def deserialize(cls, payload: Union[Dict, str]):
         payload = super().deserialize(payload)
         serialized_kwargs = payload['kwargs']
         kwargs = {}
@@ -130,7 +135,7 @@ class Channel(BaseChannel):
 
 
 class TriggerPayload:
-    def __init__(self, payload):
+    def __init__(self, payload: Dict):
         self._json_payload = payload
         self._model = apps.get_model(
             app_label=self._json_payload['app'],
@@ -152,12 +157,13 @@ class TriggerPayload:
 
 @dataclass
 class TriggerChannel(BaseChannel):
+
     model = NotImplementedError
     old: django.db.models.Model
     new: django.db.models.Model
 
     @classmethod
-    def deserialize(cls, payload):
+    def deserialize(cls, payload: Union[Dict, str]):
         payload = super().deserialize(payload)
         trigger_payload = TriggerPayload(payload)
         return {'old': trigger_payload.old, 'new': trigger_payload.new}

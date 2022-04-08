@@ -1,0 +1,784 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.16: http://docutils.sourceforge.net/" />
+<title>django-pgpubsub</title>
+<style type="text/css">
+
+/*
+:Author: David Goodger (goodger@python.org)
+:Id: $Id: html4css1.css 7952 2016-07-26 18:15:59Z milde $
+:Copyright: This stylesheet has been placed in the public domain.
+
+Default cascading style sheet for the HTML output of Docutils.
+
+See http://docutils.sf.net/docs/howto/html-stylesheets.html for how to
+customize this style sheet.
+*/
+
+/* used to remove borders from tables and images */
+.borderless, table.borderless td, table.borderless th {
+  border: 0 }
+
+table.borderless td, table.borderless th {
+  /* Override padding for "table.docutils td" with "! important".
+     The right padding separates the table cells. */
+  padding: 0 0.5em 0 0 ! important }
+
+.first {
+  /* Override more specific margin styles with "! important". */
+  margin-top: 0 ! important }
+
+.last, .with-subtitle {
+  margin-bottom: 0 ! important }
+
+.hidden {
+  display: none }
+
+.subscript {
+  vertical-align: sub;
+  font-size: smaller }
+
+.superscript {
+  vertical-align: super;
+  font-size: smaller }
+
+a.toc-backref {
+  text-decoration: none ;
+  color: black }
+
+blockquote.epigraph {
+  margin: 2em 5em ; }
+
+dl.docutils dd {
+  margin-bottom: 0.5em }
+
+object[type="image/svg+xml"], object[type="application/x-shockwave-flash"] {
+  overflow: hidden;
+}
+
+/* Uncomment (and remove this text!) to get bold-faced definition list terms
+dl.docutils dt {
+  font-weight: bold }
+*/
+
+div.abstract {
+  margin: 2em 5em }
+
+div.abstract p.topic-title {
+  font-weight: bold ;
+  text-align: center }
+
+div.admonition, div.attention, div.caution, div.danger, div.error,
+div.hint, div.important, div.note, div.tip, div.warning {
+  margin: 2em ;
+  border: medium outset ;
+  padding: 1em }
+
+div.admonition p.admonition-title, div.hint p.admonition-title,
+div.important p.admonition-title, div.note p.admonition-title,
+div.tip p.admonition-title {
+  font-weight: bold ;
+  font-family: sans-serif }
+
+div.attention p.admonition-title, div.caution p.admonition-title,
+div.danger p.admonition-title, div.error p.admonition-title,
+div.warning p.admonition-title, .code .error {
+  color: red ;
+  font-weight: bold ;
+  font-family: sans-serif }
+
+/* Uncomment (and remove this text!) to get reduced vertical space in
+   compound paragraphs.
+div.compound .compound-first, div.compound .compound-middle {
+  margin-bottom: 0.5em }
+
+div.compound .compound-last, div.compound .compound-middle {
+  margin-top: 0.5em }
+*/
+
+div.dedication {
+  margin: 2em 5em ;
+  text-align: center ;
+  font-style: italic }
+
+div.dedication p.topic-title {
+  font-weight: bold ;
+  font-style: normal }
+
+div.figure {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+div.footer, div.header {
+  clear: both;
+  font-size: smaller }
+
+div.line-block {
+  display: block ;
+  margin-top: 1em ;
+  margin-bottom: 1em }
+
+div.line-block div.line-block {
+  margin-top: 0 ;
+  margin-bottom: 0 ;
+  margin-left: 1.5em }
+
+div.sidebar {
+  margin: 0 0 0.5em 1em ;
+  border: medium outset ;
+  padding: 1em ;
+  background-color: #ffffee ;
+  width: 40% ;
+  float: right ;
+  clear: right }
+
+div.sidebar p.rubric {
+  font-family: sans-serif ;
+  font-size: medium }
+
+div.system-messages {
+  margin: 5em }
+
+div.system-messages h1 {
+  color: red }
+
+div.system-message {
+  border: medium outset ;
+  padding: 1em }
+
+div.system-message p.system-message-title {
+  color: red ;
+  font-weight: bold }
+
+div.topic {
+  margin: 2em }
+
+h1.section-subtitle, h2.section-subtitle, h3.section-subtitle,
+h4.section-subtitle, h5.section-subtitle, h6.section-subtitle {
+  margin-top: 0.4em }
+
+h1.title {
+  text-align: center }
+
+h2.subtitle {
+  text-align: center }
+
+hr.docutils {
+  width: 75% }
+
+img.align-left, .figure.align-left, object.align-left, table.align-left {
+  clear: left ;
+  float: left ;
+  margin-right: 1em }
+
+img.align-right, .figure.align-right, object.align-right, table.align-right {
+  clear: right ;
+  float: right ;
+  margin-left: 1em }
+
+img.align-center, .figure.align-center, object.align-center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+table.align-center {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.align-left {
+  text-align: left }
+
+.align-center {
+  clear: both ;
+  text-align: center }
+
+.align-right {
+  text-align: right }
+
+/* reset inner alignment in figures */
+div.align-right {
+  text-align: inherit }
+
+/* div.align-center * { */
+/*   text-align: left } */
+
+.align-top    {
+  vertical-align: top }
+
+.align-middle {
+  vertical-align: middle }
+
+.align-bottom {
+  vertical-align: bottom }
+
+ol.simple, ul.simple {
+  margin-bottom: 1em }
+
+ol.arabic {
+  list-style: decimal }
+
+ol.loweralpha {
+  list-style: lower-alpha }
+
+ol.upperalpha {
+  list-style: upper-alpha }
+
+ol.lowerroman {
+  list-style: lower-roman }
+
+ol.upperroman {
+  list-style: upper-roman }
+
+p.attribution {
+  text-align: right ;
+  margin-left: 50% }
+
+p.caption {
+  font-style: italic }
+
+p.credits {
+  font-style: italic ;
+  font-size: smaller }
+
+p.label {
+  white-space: nowrap }
+
+p.rubric {
+  font-weight: bold ;
+  font-size: larger ;
+  color: maroon ;
+  text-align: center }
+
+p.sidebar-title {
+  font-family: sans-serif ;
+  font-weight: bold ;
+  font-size: larger }
+
+p.sidebar-subtitle {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+p.topic-title {
+  font-weight: bold }
+
+pre.address {
+  margin-bottom: 0 ;
+  margin-top: 0 ;
+  font: inherit }
+
+pre.literal-block, pre.doctest-block, pre.math, pre.code {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+pre.code .ln { color: grey; } /* line numbers */
+pre.code, code { background-color: #eeeeee }
+pre.code .comment, code .comment { color: #5C6576 }
+pre.code .keyword, code .keyword { color: #3B0D06; font-weight: bold }
+pre.code .literal.string, code .literal.string { color: #0C5404 }
+pre.code .name.builtin, code .name.builtin { color: #352B84 }
+pre.code .deleted, code .deleted { background-color: #DEB0A1}
+pre.code .inserted, code .inserted { background-color: #A3D289}
+
+span.classifier {
+  font-family: sans-serif ;
+  font-style: oblique }
+
+span.classifier-delimiter {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+span.interpreted {
+  font-family: sans-serif }
+
+span.option {
+  white-space: nowrap }
+
+span.pre {
+  white-space: pre }
+
+span.problematic {
+  color: red }
+
+span.section-subtitle {
+  /* font-size relative to parent (h1..h6 element) */
+  font-size: 80% }
+
+table.citation {
+  border-left: solid 1px gray;
+  margin-left: 1px }
+
+table.docinfo {
+  margin: 2em 4em }
+
+table.docutils {
+  margin-top: 0.5em ;
+  margin-bottom: 0.5em }
+
+table.footnote {
+  border-left: solid 1px black;
+  margin-left: 1px }
+
+table.docutils td, table.docutils th,
+table.docinfo td, table.docinfo th {
+  padding-left: 0.5em ;
+  padding-right: 0.5em ;
+  vertical-align: top }
+
+table.docutils th.field-name, table.docinfo th.docinfo-name {
+  font-weight: bold ;
+  text-align: left ;
+  white-space: nowrap ;
+  padding-left: 0 }
+
+/* "booktabs" style (no vertical lines) */
+table.docutils.booktabs {
+  border: 0px;
+  border-top: 2px solid;
+  border-bottom: 2px solid;
+  border-collapse: collapse;
+}
+table.docutils.booktabs * {
+  border: 0px;
+}
+table.docutils.booktabs th {
+  border-bottom: thin solid;
+  text-align: left;
+}
+
+h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
+h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {
+  font-size: 100% }
+
+ul.auto-toc {
+  list-style-type: none }
+
+</style>
+</head>
+<body>
+<div class="document" id="django-pgpubsub">
+<h1 class="title">django-pgpubsub</h1>
+
+<div class="section" id="documentation">
+<h1>Documentation</h1>
+</div>
+<div class="section" id="id1">
+<h1>django-pgpubsub</h1>
+<p><tt class="docutils literal"><span class="pre">django-pgpubsub</span></tt> provides a framework for building an asynchronous
+and distributed message processing network on top of a Django application
+using a PostgreSQL database. This is achieved by leveraging Postgres'
+<a class="reference external" href="https://www.postgresql.org/docs/current/sql-notify.html">LISTEN/NOTIFY</a>
+protocol to build a message queue at the database layer.
+The simple user-friendly interface,
+minimal infrastructural requirements and the ability to leverage Postgres'
+transactional behaviour to achieve exactly-once messaging makes
+<tt class="docutils literal"><span class="pre">django-pgpubsub</span></tt> a solid choice as a lightweight alternative to AMPQ
+messaging services, such as
+<a class="reference external" href="https://docs.celeryq.dev/en/stable/search.html?q=ampq">Celery</a> .</p>
+</div>
+<div class="section" id="highlights">
+<h1>Highlights</h1>
+<ul>
+<li><p class="first"><strong>Minimal Operational Infrastructure</strong>: If you're already running a Django application
+on top of a Postgres database, the installation of this library is the sum total
+of the operational work required to implement a framework for a distributed
+message processing framework. No additional servers or server configuration
+is required.</p>
+</li>
+<li><p class="first"><strong>Lightweight Polling</strong>: we make use of the Postgres <tt class="docutils literal">LISTEN/NOTIFY</tt>
+protocol to have achieve message polling which uses
+<a class="reference external" href="https://www.psycopg.org/docs/advanced.html#asynchronous-notifications">no CPU and no database transactions unless there is a message to read.</a>.</p>
+</li>
+<li><p class="first"><strong>Exactly-once messaging</strong>: <tt class="docutils literal"><span class="pre">django-pgpubsub</span></tt> can be configured so
+that messages are processed exactly once. This is achieved by storing
+a copy of each new message in the database and mandating that a message listener
+must obtain a postgres lock on that message before processing it.
+This allows us to have concurrent processes listening to the same message channel
+with the guarantee that no two channels will process the same message. Moreover,
+the use of Django's <tt class="docutils literal">.select_for_update(skip_locked=True)</tt> method allows
+concurrent listeners to continue processing incoming messages without waiting
+for lock-release events from other listening processes.</p>
+</li>
+<li><p class="first"><strong>Integration with Postgres Triggers</strong>:
+To quote the <a class="reference external" href="https://www.postgresql.org/docs/current/sql-notify.html">official</a>
+Postgres docs:</p>
+<p><em>&quot;When NOTIFY is used to signal the occurrence of changes to a particular table,
+a useful programming technique is to put the NOTIFY in a statement trigger that is triggered
+by table updates.
+In this way, notification happens automatically when the table is changed,
+and the application programmer cannot accidentally forget to do it.&quot;</em></p>
+<p>By making use of the <tt class="docutils literal"><span class="pre">django-pgtrigger</span></tt>
+<a class="reference external" href="https://pypi.org/project/django-pgtrigger/">library</a>, <tt class="docutils literal"><span class="pre">django-pgpubsub</span></tt>
+offers a Django application layer abstraction of the trigger-notify Postgres
+pattern. This allows developers to easily write python-callbacks which will
+be invoked (asynchronously) whenever a custom <tt class="docutils literal"><span class="pre">django-pgtrigger</span></tt> is invoked.
+Utilising a Postgres-trigger as the ground-zero for emitting a
+message based on a database table event is far more robust than relying
+on something at the application layer (for example, a <tt class="docutils literal">post_save</tt> signal,
+which could easily be missed if the <tt class="docutils literal">bulk_create</tt> method was used).</p>
+</li>
+<li><p class="first"><strong>Durability and Recovery</strong>: <tt class="docutils literal"><span class="pre">django-pgpubsub</span></tt> can be configured so that
+messages are stored in the database before they're sent to be processed.
+This allows us to replay any messages which may have been missed by listening
+processes, for example in the event a message was sent whilst the listening
+processes were down.</p>
+</li>
+<li><p class="first"><strong>Atomicity</strong>: The Postgres <tt class="docutils literal">NOTIFY</tt> protocol respects the atomicity
+of the transaction in which it is invoked. The result of this is that
+any message sent using <tt class="docutils literal"><span class="pre">django-pgpubsub</span></tt> will be sent if and only if
+the transaction in which it sent is successfully committed to the database.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="limitations">
+<h1>Limitations</h1>
+<ul class="simple">
+<li>A database-based queue will not be capable of the same volume of throughput as a dedicated
+AMPQ queue.</li>
+<li>If a message is sent using Postgres' <tt class="docutils literal">NOTIFY</tt> and no process is listening at that time,
+the message is lost forever. As explained in the &quot;Durability and Recovery&quot; section above,
+pgpubsub can easily be configured so that we can replay &quot;lost&quot; messages, but this comes at the
+performance penalty of inserting a row into a table before sending each message. This is the same
+penalty we must pay if we wish to have concurrent processes listening to the same channel without
+duplicate message processing, as explained in the &quot;Exactly-once messaging&quot; section above.</li>
+</ul>
+</div>
+<div class="section" id="alternatives">
+<h1>Alternatives</h1>
+<ul class="simple">
+<li><a class="reference external" href="https://docs.celeryq.dev/en/stable/search.html?q=ampq">Celery</a>: The canonical distributed message processing library for django based applications. This can handle large volumes of throughput and is well tested in production. It is however operationally quite heavy to maintain and set-up. It also does not come with out-of-the-box functionality to guarantee exactly-once messaging.</li>
+<li><a class="reference external" href="https://procrastinate.readthedocs.io/">Procrastinate</a>: This was a library we discovered whilst developing <tt class="docutils literal">pgpubsub</tt> which also implements a distributed message processing library using the Postgres <tt class="docutils literal">LISTEN/NOTIFY</tt> protocol. Whilst <tt class="docutils literal">Procrastinate</tt> is well tested and offers several features which are not currently offered by <tt class="docutils literal">pgpubsub</tt>, we believe that the interface of <tt class="docutils literal">pgpubsub</tt> coupled with the integration with django and Postgres triggers make our library a solid alternative for certain use cases.</li>
+</ul>
+</div>
+<div class="section" id="quick-start">
+<h1>Quick start</h1>
+<div class="section" id="prerequisites">
+<h2>Prerequisites</h2>
+</div>
+<div class="section" id="installing">
+<h2>Installing</h2>
+<p>Mention we need to perform a migration after installing</p>
+</div>
+<div class="section" id="minimal-example">
+<h2>Minimal Example</h2>
+</div>
+</div>
+<div class="section" id="documentation-by-example">
+<h1>Documentation (by Example)</h1>
+<p>In this section we give a brief overview of how to use
+<tt class="docutils literal">pgpubsub</tt> to add asynchronous message processing functionality
+to an existing django application.</p>
+<div class="section" id="our-test-application">
+<h2>Our Test Application</h2>
+<p>Suppose we have the following basic django models (
+a fully executable version of this example can be
+found in <tt class="docutils literal">pgpubsub.tests</tt>):</p>
+<pre class="code python literal-block">
+<span class="comment single"># models.py</span>
+<span class="keyword">class</span> <span class="name class">Author</span><span class="punctuation">(</span><span class="name">models</span><span class="operator">.</span><span class="name">Model</span><span class="punctuation">):</span>
+    <span class="name">user</span> <span class="operator">=</span> <span class="name">models</span><span class="operator">.</span><span class="name">ForeignKey</span><span class="punctuation">(</span><span class="name">User</span><span class="punctuation">,</span> <span class="name">on_delete</span><span class="operator">=</span><span class="name">models</span><span class="operator">.</span><span class="name">PROTECT</span><span class="punctuation">,</span> <span class="name">null</span><span class="operator">=</span><span class="keyword constant">True</span><span class="punctuation">)</span>
+    <span class="name">name</span> <span class="operator">=</span> <span class="name">models</span><span class="operator">.</span><span class="name">TextField</span><span class="punctuation">()</span>
+
+
+<span class="keyword">class</span> <span class="name class">Post</span><span class="punctuation">(</span><span class="name">models</span><span class="operator">.</span><span class="name">Model</span><span class="punctuation">):</span>
+    <span class="name">content</span> <span class="operator">=</span> <span class="name">models</span><span class="operator">.</span><span class="name">TextField</span><span class="punctuation">()</span>
+    <span class="name">date</span> <span class="operator">=</span> <span class="name">models</span><span class="operator">.</span><span class="name">DateTimeField</span><span class="punctuation">()</span>
+    <span class="name">author</span> <span class="operator">=</span> <span class="name">models</span><span class="operator">.</span><span class="name">ForeignKey</span><span class="punctuation">(</span>
+        <span class="name">Author</span><span class="punctuation">,</span> <span class="name">null</span><span class="operator">=</span><span class="keyword constant">True</span><span class="punctuation">,</span> <span class="name">on_delete</span><span class="operator">=</span><span class="name">models</span><span class="operator">.</span><span class="name">SET_NULL</span><span class="punctuation">,</span> <span class="name">related_name</span><span class="operator">=</span><span class="literal string single">'entries'</span>
+    <span class="punctuation">)</span>
+</pre>
+<p>Given these models, we'll describe the mechanics of using the <tt class="docutils literal">pgpubsub</tt> library
+to achieve the following aims (which are for illustrative purposes only):</p>
+<ul class="simple">
+<li>To asynchronously maintain a cache of how frequently <tt class="docutils literal">Post</tt> objects are
+read per day.</li>
+<li>To define a postgres-trigger to ensure that, whenever an <tt class="docutils literal">Author</tt> object is created, a <tt class="docutils literal">Post</tt> object is
+asynchronously created for that author with the title &quot;Test Post&quot;.</li>
+</ul>
+</div>
+<div class="section" id="channels">
+<h2>Channels</h2>
+<p>Channels are the medium through which messages are sent.
+A channel is defined as a dataclass, where the dataclass fields define the accepted
+notification payload. A channel must be declared in your app's <tt class="docutils literal">channels.py</tt> file.</p>
+<p>For our first example, the data required to update the aforementioned post-reads-per-day cache
+is a date and a <tt class="docutils literal">Post</tt> id. This payload defines the fields of our first channel dataclass,
+through which notifications will be sent to update the post-reads-per-day cache:</p>
+<pre class="code python literal-block">
+<span class="comment single"># channels.py</span>
+<span class="keyword namespace">import</span> <span class="name namespace">datetime</span>
+
+<span class="keyword namespace">from</span> <span class="name namespace">pgpubsub.channels</span> <span class="keyword namespace">import</span> <span class="name">Channel</span>
+
+
+<span class="name decorator">&#64;dataclass</span>
+<span class="keyword">class</span> <span class="name class">PostReads</span><span class="punctuation">(</span><span class="name">Channel</span><span class="punctuation">):</span>
+    <span class="name">model_id</span><span class="punctuation">:</span> <span class="name builtin">int</span>
+    <span class="name">date</span><span class="punctuation">:</span> <span class="name">datetime</span><span class="operator">.</span><span class="name">date</span>
+</pre>
+<p>In our second example we wish to have a channel through which
+notifications sent whenever a postgres-trigger is invoked by the creation
+of an <tt class="docutils literal">Author</tt> object. To achieve this, we define our channel like so (
+also in our apps <tt class="docutils literal">channels.py</tt> module):</p>
+<pre class="code python literal-block">
+<span class="keyword namespace">from</span> <span class="name namespace">pgpubsub.channels</span> <span class="keyword namespace">import</span> <span class="name">TriggerChannel</span>
+
+<span class="name decorator">&#64;dataclass</span>
+<span class="keyword">class</span> <span class="name class">AuthorTriggerChannel</span><span class="punctuation">(</span><span class="name">TriggerChannel</span><span class="punctuation">):</span>
+    <span class="name">model</span> <span class="operator">=</span> <span class="name">Author</span>
+</pre>
+<p>Note that the key difference between this and the previous example is that
+this channel inherits from <tt class="docutils literal">TriggerChannel</tt>, which defines the payload for
+all trigger-based notifications:</p>
+<pre class="code python literal-block">
+<span class="name decorator">&#64;dataclass</span>
+<span class="keyword">class</span> <span class="name class">TriggerChannel</span><span class="punctuation">(</span><span class="name">_Channel</span><span class="punctuation">):</span>
+    <span class="name">model</span> <span class="operator">=</span> <span class="name exception">NotImplementedError</span>
+    <span class="name">old</span><span class="punctuation">:</span> <span class="name">django</span><span class="operator">.</span><span class="name">db</span><span class="operator">.</span><span class="name">models</span><span class="operator">.</span><span class="name">Model</span>
+    <span class="name">new</span><span class="punctuation">:</span> <span class="name">django</span><span class="operator">.</span><span class="name">db</span><span class="operator">.</span><span class="name">models</span><span class="operator">.</span><span class="name">Model</span>
+</pre>
+<p>Here the <tt class="docutils literal">old</tt> and <tt class="docutils literal">new</tt> parameters are the (unsaved) versions of what the
+trigger invoking instance looked like before and after the trigger was invoked.
+In this example, <tt class="docutils literal">old</tt> would refer to the state of our <tt class="docutils literal">Author</tt> object
+pre-creation (and would hence be <tt class="docutils literal">None</tt>) and <tt class="docutils literal">new</tt> would refer to a copy of
+the newly created <tt class="docutils literal">Author</tt> instance. This payload is inspired by the <tt class="docutils literal">OLD</tt>
+and <tt class="docutils literal">NEW</tt> values available in the postgres <tt class="docutils literal">CREATE TRIGGER</tt> statement
+(<a class="reference external" href="https://www.postgresql.org/docs/9.1/sql-createtrigger.html">https://www.postgresql.org/docs/9.1/sql-createtrigger.html</a>). The only custom
+logic we need to define on a trigger channel is the <tt class="docutils literal">model</tt> class-level
+attribute.</p>
+</div>
+<div class="section" id="listeners">
+<h2>Listeners</h2>
+<p>In the <tt class="docutils literal">pgpubsub</tt> library, a <em>listener</em> is the function
+which processes notifications sent through some particular channel</p>
+<p>A listener must be defined in our app's <tt class="docutils literal">listeners.py</tt> file and must
+be declared using one of the decorators in <tt class="docutils literal">pgpubsub.listen.py</tt>.
+These decorators are also responsible for pointing a listener function
+to listen to a particular channel. When a function is associated to a channel
+in this way, we say that function &quot;listening&quot; to that channel.</p>
+<p>Continuing with the example whereby we maintain a cache of post reads,
+we implement a listener function like so:</p>
+<pre class="code python literal-block">
+<span class="comment single"># tests/listeners.py</span>
+<span class="keyword namespace">import</span> <span class="name namespace">pgpubsub</span>
+
+<span class="comment single"># Simple cache for illustrative purposes only</span>
+<span class="name">post_reads_per_date_cache</span> <span class="operator">=</span> <span class="name">defaultdict</span><span class="punctuation">(</span><span class="name builtin">dict</span><span class="punctuation">)</span>
+<span class="name">author_reads_cache</span> <span class="operator">=</span> <span class="name builtin">dict</span><span class="punctuation">()</span>
+
+<span class="name decorator">&#64;pgpubsub</span><span class="operator">.</span><span class="name">listener</span><span class="punctuation">(</span><span class="name">PostReads</span><span class="punctuation">)</span>
+<span class="keyword">def</span> <span class="name function">update_post_reads_per_date_cache</span><span class="punctuation">(</span><span class="name">model_id</span><span class="punctuation">,</span> <span class="name">date</span><span class="punctuation">):</span>
+    <span class="name builtin">print</span><span class="punctuation">(</span><span class="literal string affix">f</span><span class="literal string single">'Processing update_post_reads_per_date with '</span>
+          <span class="literal string affix">f</span><span class="literal string single">'args </span><span class="literal string interpol">{</span><span class="name">model_id</span><span class="literal string interpol">}</span><span class="literal string single">, </span><span class="literal string interpol">{</span><span class="name">date</span><span class="literal string interpol">}</span><span class="literal string single">'</span><span class="punctuation">)</span>
+    <span class="name builtin">print</span><span class="punctuation">(</span><span class="literal string affix">f</span><span class="literal string single">'Cache before: </span><span class="literal string interpol">{</span><span class="name">post_reads_per_date_cache</span><span class="literal string interpol">}</span><span class="literal string single">'</span><span class="punctuation">)</span>
+    <span class="name">current_count</span> <span class="operator">=</span> <span class="name">post_reads_per_date_cache</span><span class="punctuation">[</span><span class="name">date</span><span class="punctuation">]</span><span class="operator">.</span><span class="name">get</span><span class="punctuation">(</span><span class="name">model_id</span><span class="punctuation">,</span> <span class="literal number integer">0</span><span class="punctuation">)</span>
+    <span class="name">post_reads_per_date_cache</span><span class="punctuation">[</span><span class="name">date</span><span class="punctuation">][</span><span class="name">model_id</span><span class="punctuation">]</span> <span class="operator">=</span> <span class="name">current_count</span> <span class="operator">+</span> <span class="literal number integer">1</span>
+    <span class="name builtin">print</span><span class="punctuation">(</span><span class="literal string affix">f</span><span class="literal string single">'Cache after: </span><span class="literal string interpol">{</span><span class="name">post_reads_per_date_cache</span><span class="literal string interpol">}</span><span class="literal string single">'</span><span class="punctuation">)</span>
+</pre>
+<p>As we may expect, the channel we associate to a listener also
+defines the signature of the listener function.
+Note that it is possible to have multiple
+listeners to a single channel and the signatures of those listeners
+can vary by arguments declared as optional on their common channel -
+see <tt class="docutils literal">pgpubsub.tests.listeners.py</tt> for an example.</p>
+<p>Next we implement the listener which is used to asynchronously
+create a <tt class="docutils literal">Post</tt> object whenever a new <tt class="docutils literal">Author</tt> object is created.
+For this listener, we can use the pre-defined <tt class="docutils literal">post_insert_listener</tt>
+decorator:</p>
+<pre class="code python literal-block">
+<span class="comment single"># tests/listeners.py</span>
+<span class="keyword namespace">import</span> <span class="name namespace">pgpubsub</span>
+
+<span class="name decorator">&#64;pgpubsub</span><span class="operator">.</span><span class="name">post_insert_listener</span><span class="punctuation">(</span><span class="name">AuthorTriggerChannel</span><span class="punctuation">)</span>
+<span class="keyword">def</span> <span class="name function">create_first_post_for_author</span><span class="punctuation">(</span><span class="name">old</span><span class="punctuation">:</span> <span class="name">Author</span><span class="punctuation">,</span> <span class="name">new</span><span class="punctuation">:</span> <span class="name">Author</span><span class="punctuation">):</span>
+    <span class="name builtin">print</span><span class="punctuation">(</span><span class="literal string affix">f</span><span class="literal string single">'Creating first post for </span><span class="literal string interpol">{</span><span class="name">new</span><span class="operator">.</span><span class="name">name</span><span class="literal string interpol">}</span><span class="literal string single">'</span><span class="punctuation">)</span>
+    <span class="name">Post</span><span class="operator">.</span><span class="name">objects</span><span class="operator">.</span><span class="name">create</span><span class="punctuation">(</span>
+        <span class="name">author_id</span><span class="operator">=</span><span class="name">new</span><span class="operator">.</span><span class="name">pk</span><span class="punctuation">,</span>
+        <span class="name">content</span><span class="operator">=</span><span class="literal string single">'Welcome! This is your first post'</span><span class="punctuation">,</span>
+        <span class="name">date</span><span class="operator">=</span><span class="name">datetime</span><span class="operator">.</span><span class="name">date</span><span class="operator">.</span><span class="name">today</span><span class="punctuation">(),</span>
+    <span class="punctuation">)</span>
+</pre>
+<p>Any listener associated to a trigger-based channel (one inheriting from
+<tt class="docutils literal">TriggerChannel</tt>) necessarily has a signature consisting of the <tt class="docutils literal">old</tt>
+and <tt class="docutils literal">new</tt> payload described in the previous section. Note that
+declaring a trigger-based listener in the manner above <em>actually
+writes a postgres-trigger to our database</em>. This is achieved by
+leveraging the <tt class="docutils literal"><span class="pre">django-pgtrigger</span></tt> library to write a pg-trigger
+which will send a payload using the postgres <tt class="docutils literal">NOTIFY</tt> command
+whenever an <tt class="docutils literal">Author</tt> object is inserted into the database. Note that
+as with all triggers defined using <tt class="docutils literal"><span class="pre">django-pgtrigger</span></tt>, this trigger
+is first written to the database after a migration.</p>
+<p>Finally, we must also ensure that this <tt class="docutils literal">listeners.py</tt> module is imported
+into the app's config class (similar to how one would use django signals):</p>
+<pre class="code python literal-block">
+<span class="keyword">class</span> <span class="name class">TestsConfig</span><span class="punctuation">(</span><span class="name">AppConfig</span><span class="punctuation">):</span>
+    <span class="name">name</span> <span class="operator">=</span> <span class="literal string single">'tests'</span>
+
+    <span class="keyword">def</span> <span class="name function">ready</span><span class="punctuation">(</span><span class="name builtin pseudo">self</span><span class="punctuation">):</span>
+        <span class="keyword namespace">import</span> <span class="name namespace">tests.listeners</span>
+</pre>
+</div>
+<div class="section" id="listening">
+<h2>Listening</h2>
+<p>To have our listener functions &quot;listen&quot; for
+incoming notifications on their associated channel, we can make use
+of the <tt class="docutils literal">listen</tt> management command provided by the <tt class="docutils literal">pgpubsub</tt> library:</p>
+<pre class="code python literal-block">
+<span class="operator">./</span><span class="name">manage</span><span class="operator">.</span><span class="name">py</span> <span class="name">listen</span>
+</pre>
+<p>The <tt class="docutils literal">listen</tt> command accepts two optional arguments:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">--channels</span></tt>: a space separated list of the
+full module paths of the channels we wish to listen to.
+When no value is supplied, we default to listening to all registered channels
+in our project. For example,
+we can use the following command to listen to notifications coming through
+the <tt class="docutils literal">PostReads</tt> channel only:</li>
+</ul>
+<pre class="code python literal-block">
+<span class="operator">./</span><span class="name">manage</span><span class="operator">.</span><span class="name">py</span> <span class="name">listen</span> <span class="operator">--</span><span class="name">channels</span> <span class="literal string single">'pgpubsub.tests.channels.PostReads'</span>
+</pre>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">--processes</span></tt>: an integer which denotes the number of concurrent processes
+we wish to dedicate to listening to the specified channels. When no value is
+supplied, we default to using a single process. Note that if multiple processes
+are listening to the same channel then by default both processes will act on
+each notification. To prevent this and have each notification be acted upon
+by exactly one listening process, we need to add <tt class="docutils literal">lock_notifications = True</tt>
+to our channel. See the &quot;Lockable Notifications and Exactly-Once Messaging&quot;
+section below for more.</li>
+</ul>
+<p>MORE ON HOW WE LISTEN</p>
+</div>
+<div class="section" id="notifications">
+<h2>Notifications</h2>
+<p>With our listener's listening on our channels, all that remains is to define where
+our notifications are sent from.</p>
+<p>For our first example, we need to send a notification through the <tt class="docutils literal">PostReads</tt> channel
+whenever a <tt class="docutils literal">Post</tt> object is read. To achieve this, we can make use of the
+<tt class="docutils literal">pgpubsub.notify.notify</tt> function. In our example, we create a <tt class="docutils literal">fetch</tt> classmethod
+on the <tt class="docutils literal">Post</tt> model which is used to retrieve a <tt class="docutils literal">Post</tt> instance from the database
+and also send a notification via the <tt class="docutils literal">PostReads</tt> channel to asynchronously invoke the
+<tt class="docutils literal">update_post_reads_per_date_cache</tt> listener. This <cite>fetch</cite> method could then
+of course be utilised in whatever API call is used when a user reads a post:</p>
+<pre class="code python literal-block">
+<span class="comment single"># tests/models.py</span>
+<span class="keyword namespace">import</span> <span class="name namespace">pgpubsub</span>
+
+<span class="keyword">class</span> <span class="name class">Post</span><span class="punctuation">(</span><span class="name">models</span><span class="operator">.</span><span class="name">Model</span><span class="punctuation">):</span>
+    <span class="operator">...</span>
+    <span class="name decorator">&#64;classmethod</span>
+    <span class="keyword">def</span> <span class="name function">fetch</span><span class="punctuation">(</span><span class="name builtin pseudo">cls</span><span class="punctuation">,</span> <span class="name">post_id</span><span class="punctuation">):</span>
+        <span class="name">post</span> <span class="operator">=</span> <span class="name builtin pseudo">cls</span><span class="operator">.</span><span class="name">objects</span><span class="operator">.</span><span class="name">get</span><span class="punctuation">(</span><span class="name">pk</span><span class="operator">=</span><span class="name">post_id</span><span class="punctuation">)</span>
+        <span class="name">pgpubsub</span><span class="operator">.</span><span class="name">notify</span><span class="punctuation">(</span>
+            <span class="literal string single">'pgpubsub.tests.channels.PostReads'</span><span class="punctuation">,</span>
+            <span class="name">model_id</span><span class="operator">=</span><span class="name">post_id</span><span class="punctuation">,</span>
+            <span class="name">date</span><span class="operator">=</span><span class="name">datetime</span><span class="operator">.</span><span class="name">date</span><span class="operator">.</span><span class="name">today</span><span class="punctuation">(),</span>
+        <span class="punctuation">)</span>
+        <span class="keyword">return</span> <span class="name">post</span>
+</pre>
+<p>A few notes on the above implementation:</p>
+<ul class="simple">
+<li>Under the hood, this python function is making use of the postgres
+<tt class="docutils literal">NOTIFY</tt> command to send the payload as a JSON object.</li>
+<li>The first argument to the <cite>notify</cite> function can either be the full module
+path of a channel or the channel class itself. The following keyword
+arguments should match the dataclass fields of the channel we're notifying
+(up to optional kwargs).</li>
+<li>Using <tt class="docutils literal">pgpubsub.notify.notify</tt> is the appropriate choice for any non-postgres trigger
+based notification.</li>
+</ul>
+<p>For trigger based channels, notifications are sent purely at the database
+layer whenever the corresponding trigger is invoked. To understand this in a bit
+more detail, let's consider our example above:</p>
+<pre class="code python literal-block">
+<span class="name decorator">&#64;pgpubsub</span><span class="operator">.</span><span class="name">post_insert_listener</span><span class="punctuation">(</span><span class="name">AuthorTriggerChannel</span><span class="punctuation">)</span>
+<span class="keyword">def</span> <span class="name function">create_first_post_for_author</span><span class="punctuation">(</span><span class="name">old</span><span class="punctuation">:</span> <span class="name">Author</span><span class="punctuation">,</span> <span class="name">new</span><span class="punctuation">:</span> <span class="name">Author</span><span class="punctuation">):</span>
+    <span class="name builtin">print</span><span class="punctuation">(</span><span class="literal string affix">f</span><span class="literal string single">'Creating first post for </span><span class="literal string interpol">{</span><span class="name">new</span><span class="operator">.</span><span class="name">name</span><span class="literal string interpol">}</span><span class="literal string single">'</span><span class="punctuation">)</span>
+    <span class="name">Post</span><span class="operator">.</span><span class="name">objects</span><span class="operator">.</span><span class="name">create</span><span class="punctuation">(</span>
+        <span class="name">author_id</span><span class="operator">=</span><span class="name">new</span><span class="operator">.</span><span class="name">pk</span><span class="punctuation">,</span>
+        <span class="name">content</span><span class="operator">=</span><span class="literal string single">'Welcome! This is your first post'</span><span class="punctuation">,</span>
+        <span class="name">date</span><span class="operator">=</span><span class="name">datetime</span><span class="operator">.</span><span class="name">date</span><span class="operator">.</span><span class="name">today</span><span class="punctuation">(),</span>
+    <span class="punctuation">)</span>
+</pre>
+<p>As explained above, if we write this function and perform a migration
+, the <tt class="docutils literal">post_insert_listener</tt> decorator ensures that a trigger function
+is written to the database. Then, after any <tt class="docutils literal">Author</tt> row is inserted to the
+database, the <tt class="docutils literal">post_insert_listener</tt> also ensures that that database-level trigger
+function is invoked, firing a notification with a JSON payload consisting
+of the <tt class="docutils literal">OLD</tt> and <tt class="docutils literal">NEW</tt> values of the <tt class="docutils literal">Author</tt> instance before and after the
+its creation. Associating the channel like so</p>
+<pre class="code python literal-block">
+<span class="name">post_insert_listener</span><span class="punctuation">(</span><span class="name">AuthorTriggerChannel</span><span class="punctuation">)</span>
+</pre>
+<p>ensures that the notification is sent via the <tt class="docutils literal">AuthorTriggerChannel</tt> and hence ends up being
+processed by the <tt class="docutils literal">create_first_post_for_author</tt> listener. To examine the internals of the trigger functions used to send notifications at the database level,
+see <tt class="docutils literal">pgpubsub.triggers.py</tt>.</p>
+<p>Note that postgres ensures that notifications sent via <tt class="docutils literal">NOTIFY</tt> are only sent <em>after</em> the commit which
+created them is committed, we can be sure that in our example our newly
+created <tt class="docutils literal">Author</tt> will be safely in the database before the listener process attempts to
+associate a <tt class="docutils literal">Post</tt> to it.</p>
+</div>
+<div class="section" id="lockable-notifications-and-exactly-once-messaging">
+<h2>Lockable Notifications and Exactly-Once Messaging</h2>
+<p>In the default implementation of the Postgres <tt class="docutils literal">LISTEN/NOTIFY</tt> protocol,
+multiple processes listening to the same channel will result in each process acting upon
+each notification sent through that channel. This behaviour is often undesirable, so
+<tt class="docutils literal">pgpubsub</tt> offers users the option to define channels which allow one, and only one,
+listening process to act upon each notification. We can achieve this simply by defining
+<tt class="docutils literal">lock_notifications=True</tt> on our channel object. This is the desired notification
+processing behaviour for our <tt class="docutils literal">AuthorTriggerChannel</tt>, where we want to create exactly one
+<tt class="docutils literal">Post</tt> whenever an <tt class="docutils literal">Author</tt> row is inserted:</p>
+<pre class="code python literal-block">
+<span class="keyword namespace">from</span> <span class="name namespace">pgpubsub.channels</span> <span class="keyword namespace">import</span> <span class="name">TriggerChannel</span>
+
+<span class="name decorator">&#64;dataclass</span>
+<span class="keyword">class</span> <span class="name class">AuthorTriggerChannel</span><span class="punctuation">(</span><span class="name">TriggerChannel</span><span class="punctuation">):</span>
+    <span class="name">model</span> <span class="operator">=</span> <span class="name">Author</span>
+    <span class="name">lock_notifications</span> <span class="operator">=</span> <span class="keyword constant">True</span>
+</pre>
+<p>Enabling <tt class="docutils literal">lock_notifications</tt> on a channel has the following effect:</p>
+<ol class="arabic simple">
+<li>Whenever a notification is sent through that channel
+(either via the <tt class="docutils literal">pgpubsub.notify</tt> function or the <tt class="docutils literal">pgpubsub.triggers.Notify</tt> trigger),
+a <tt class="docutils literal">pgpubsub.Notification</tt> object is inserted into the database. This stored notification
+contains the same JSON payload as the transient Postgres notification.</li>
+<li>When a process listening to that channel detects an incoming Postgres notification,
+it fetches and <em>obtains a lock upon</em> any stored <tt class="docutils literal">Notification</tt> object with the same
+payload. This is achieved as follows:</li>
+</ol>
+<pre class="code python literal-block">
+ <span class="name">notification</span> <span class="operator">=</span> <span class="punctuation">(</span>
+     <span class="name">Notification</span><span class="operator">.</span><span class="name">objects</span><span class="operator">.</span><span class="name">select_for_update</span><span class="punctuation">(</span>
+         <span class="name">skip_locked</span><span class="operator">=</span><span class="keyword constant">True</span><span class="punctuation">)</span><span class="operator">.</span><span class="name">filter</span><span class="punctuation">(</span>
+         <span class="name">channel</span><span class="operator">=</span><span class="name builtin pseudo">self</span><span class="operator">.</span><span class="name">notification</span><span class="operator">.</span><span class="name">channel</span><span class="punctuation">,</span>
+         <span class="name">payload</span><span class="operator">=</span><span class="name builtin pseudo">self</span><span class="operator">.</span><span class="name">notification</span><span class="operator">.</span><span class="name">payload</span><span class="punctuation">,</span>
+         <span class="punctuation">)</span><span class="operator">.</span><span class="name">first</span><span class="punctuation">()</span>
+     <span class="punctuation">)</span>
+
+<span class="name">The</span> <span class="name">fact</span> <span class="name">that</span> <span class="error">``</span><span class="name">select_for_update</span><span class="error">``</span> <span class="operator word">in</span> <span class="name">the</span> <span class="name">above</span> <span class="name">applies</span> <span class="name">a</span> <span class="name">lock</span> <span class="name">on</span> <span class="error">``</span><span class="name">notification</span><span class="error">``</span>
+<span class="name">ensures</span> <span class="name">that</span> <span class="name">no</span> <span class="name">other</span> <span class="name">process</span> <span class="name">listening</span> <span class="name">to</span> <span class="name">the</span> <span class="name">same</span> <span class="name">channel</span> <span class="name">can</span> <span class="name">retrieve</span> <span class="name">this</span> <span class="name">notification</span>
+<span class="name builtin">object</span><span class="operator">.</span> <span class="name">Moreover</span><span class="punctuation">,</span> <span class="name">the</span> <span class="name">use</span> <span class="name">of</span> <span class="error">``</span><span class="name">skip_locked</span><span class="operator">=</span><span class="keyword constant">True</span><span class="error">``</span> <span class="name">means</span> <span class="name">that</span> <span class="name builtin">any</span> <span class="name">process</span> <span class="name">which</span>
+<span class="name">cannot</span> <span class="name">obtain</span> <span class="name">the</span> <span class="name">lock</span> <span class="name">does</span> <span class="operator word">not</span> <span class="name">wait</span> <span class="keyword">for</span> <span class="name">the</span> <span class="name">lock</span> <span class="name">to</span> <span class="name">release</span><span class="operator">.</span> <span class="name">This</span> <span class="name">allows</span> <span class="name">other</span> <span class="name">processes</span>
+<span class="name">to</span> <span class="name">freely</span> <span class="name">skip</span> <span class="name">this</span> <span class="name">notification</span> <span class="operator word">and</span> <span class="name">poll</span> <span class="keyword">for</span> <span class="name">others</span><span class="punctuation">,</span> <span class="name">whilst</span> <span class="name">the</span> <span class="name">one</span> <span class="name">which</span>
+<span class="name">did</span> <span class="name">obtain</span> <span class="name">the</span> <span class="name">lock</span> <span class="name">continues</span> <span class="name">carries</span> <span class="name">on</span> <span class="name">to</span> <span class="keyword">pass</span> <span class="name">its</span> <span class="name">notification</span> <span class="name">into</span> <span class="name">the</span>
+<span class="name">listener</span> <span class="name">callback</span><span class="operator">.</span> <span class="name">If</span> <span class="name">the</span> <span class="name">callback</span> <span class="name">then</span> <span class="name">successfully</span> <span class="name">completes</span><span class="punctuation">,</span> <span class="name">the</span> <span class="name">stored</span>
+<span class="error">``</span><span class="name">Notification</span><span class="error">``</span> <span class="operator word">is</span> <span class="name">removed</span> <span class="keyword namespace">from</span> <span class="name namespace">the</span> <span class="name">database</span><span class="operator">.</span>
+</pre>
+</div>
+<div class="section" id="recovery">
+<h2>Recovery</h2>
+</div>
+</div>
+<div class="section" id="contributing-guide">
+<h1>Contributing Guide</h1>
+<p>For information on setting up django-pgpubsub for development and
+contributing changes, view <a class="reference external" href="CONTRIBUTING.rst">CONTRIBUTING.rst</a>.</p>
+</div>
+</div>
+</body>
+</html>

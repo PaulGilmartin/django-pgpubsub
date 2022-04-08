@@ -1,12 +1,9 @@
 from typing import Type, Union
 
-import pgtrigger
 from django.db import connection
-from django.db.models import Model
 from django.db.transaction import atomic
 
-from pgpubsub.channel import locate_channel, Channel
-from pgpubsub.models import Notification
+from pgpubsub.channel import locate_channel, Channel, registry
 
 
 @atomic
@@ -20,6 +17,7 @@ def notify(channel: Union[Type[Channel], str], **kwargs):
         cursor.execute(
             f"select pg_notify('{channel_cls.listen_safe_name()}', '{serialized}');")
         if channel_cls.lock_notifications:
+            from pgpubsub.models import Notification
             Notification.objects.create(
                 channel=name,
                 payload=serialized,
@@ -27,38 +25,20 @@ def notify(channel: Union[Type[Channel], str], **kwargs):
     return serialized
 
 
-class Notify(pgtrigger.Trigger):
-    """A trigger which notifies a channel"""
+def process_stored_notifications():
+    """Have processes listening to channels process current stored notifications.
 
-    def get_func(self, model: Type[Model]):
-        return f'''
-            {self._build_payload(model)}
-            {self._pre_notify()}
-            perform pg_notify('{self.name}', payload);
-            RETURN NEW;
-        '''
-
-    def get_declare(self, model: Type[Model]):
-        return [('payload', 'TEXT')]
-
-    def _pre_notify(self):
-        return ''
-
-    def _build_payload(self, model):
-        return  f'''
-            payload := json_build_object(
-                'app', '{model._meta.app_label}',
-                'model', '{model.__name__}',
-                'old', row_to_json(OLD),
-                'new', row_to_json(NEW)
-              );
-        '''
-
-
-class LockableNotify(Notify):
-
-    def _pre_notify(self):
-        return f'''
-            INSERT INTO pgpubsub_notification (channel, payload)
-            VALUES ('{self.name}', to_json(payload::text));
-        '''
+    This function sends a notification with an 'null' payload to all listening channels.
+    The result of this is to have the channels process all notifications
+    currently in the database. This can be useful if for some reason
+    a Notification object was not correctly processed after it initially
+    attempted to notify a listener (e.g. if all listeners happened to be
+    down at that point).
+    """
+    with connection.cursor() as cursor:
+        lock_channels = [c for c in registry if c.lock_notifications]
+        for channel_cls in lock_channels:
+            payload = 'null'
+            print(f'Notifying channel {channel_cls.name()} with payload {payload}')
+            cursor.execute(
+                f"select pg_notify('{channel_cls.listen_safe_name()}', '{payload}');")

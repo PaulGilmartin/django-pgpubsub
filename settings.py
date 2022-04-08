@@ -15,7 +15,7 @@ DATABASES = {'default': dj_database_url.config()}
 DATABASES = {
     "default": {
         "ENGINE": 'django.db.backends.postgresql',
-        "NAME":'postgres',
+        "NAME":'postgres_2',
         "USER": 'postgres',
         "PASSWORD": 'postgres',
         "HOST":'db',

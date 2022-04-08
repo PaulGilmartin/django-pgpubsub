@@ -15,7 +15,7 @@ services:
       - ./:/django-pgpubsub:delegated
     environment:
       - DATABASE_URL=postgres://postgres:postgres@db:5432/postgres
-    entrypoint:
-      - "/django-pgpubsub/docker_entrypoint.sh"
+    entrypoint: ''
+      #- "/django-pgpubsub/docker_entrypoint.sh"
     depends_on:
       - db

@@ -6,7 +6,7 @@ from pgpubsub.listen import listen
 
 
 class Command(BaseCommand):
-    help = 'Listen to the named postgres channel for notifications'
+    help = 'Listen to the named postgres channel(s) for notifications.'
 
     def add_arguments(self, parser):
         parser.add_argument(

@@ -1,9 +1,13 @@
+import logging
 import multiprocessing
 import select
+from typing import List, Union
 
 from django.db import connection, transaction
+from psycopg2._psycopg import Notify
 
 from pgpubsub.channel import (
+    BaseChannel,
     Channel,
     ChannelNotFound,
     locate_channel,
@@ -12,7 +16,7 @@ from pgpubsub.channel import (
 from pgpubsub.models import Notification
 
 
-def listen(channels=None):
+def listen(channels: Union[List[BaseChannel], List[str]]=None):
     pg_connection = listen_to_channels(channels)
     while True:
         if select.select([pg_connection], [], [], 1) == ([], [], []):
@@ -29,7 +33,7 @@ def listen(channels=None):
                 raise
 
 
-def listen_to_channels(channels=None):
+def listen_to_channels(channels: Union[List[BaseChannel], List[str]]=None):
     if channels is None:
         channels = registry
     else:
@@ -52,53 +56,89 @@ def process_notifications(pg_connection):
     pg_connection.poll()
     while pg_connection.notifies:
         notification = pg_connection.notifies.pop(0)
-        channel_cls, callbacks = Channel.get(notification.channel)
-        print(
-            f'Received notification on {channel_cls.name()}')
         with transaction.atomic():
-            if channel_cls.lock_notifications:
-                channel_name = notification.channel
-
-                if notification.payload == 'null':
-                    print('Received null payload. Processing all notifications for channel')
-                    notifications = (
-                        Notification.objects.select_for_update(
-                            skip_locked=True).filter(channel=notification.channel)
-                    )
-                    for notification in notifications:
-                        _process_notification(
-                            pg_connection, channel_cls, callbacks, notification)
-
-                else:
-                    print('Received non-null payload.')
-                    notification = (
-                        Notification.objects.select_for_update(
-                            skip_locked=True).filter(
-                            channel=channel_name,
-                            payload=notification.payload,
-                        ).first()
-                    )
-                    if notification is None:
-                        print(f'Could not obtain a lock on notification'
-                              f'{notification} sent to channel {channel_name}')
-                        print('\n')
-                        continue
-                    else:
-                        print(f'Obtained lock on {notification}')
-                        _process_notification(
-                            pg_connection, channel_cls, callbacks, notification)
-            else:
-                print(f'Processing non-stored notification {notification}')
-                _process_notification(
-                    pg_connection, channel_cls, callbacks, notification)
+            for processor in [
+                NotificationProcessor,
+                LockableNotificationProcessor,
+                NotificationRecoveryProcessor,
+            ]:
+                try:
+                    processor = processor(notification, pg_connection)
+                except InvalidNotificationProcessor:
+                    continue
+                processor.process()
 
 
-def _process_notification(
-        pg_connection, channel_cls, callbacks, notification):
-    channel = channel_cls.build_from_payload(
-        notification.payload, callbacks)
-    channel.execute_callbacks()
-    if channel_cls.lock_notifications:
-        notification.delete()
-    print('\n')
-    pg_connection.poll()
+class NotificationProcessor:
+    def __init__(self, notification: Notify, pg_connection):
+        self.notification = notification
+        self.channel_cls, self.callbacks = Channel.get(
+            notification.channel)
+        self.pg_connection = pg_connection
+        print(
+            f'Processing notification for {self.channel_cls.name()}')
+        self.validate()
+
+    def validate(self):
+        if self.channel_cls.lock_notifications:
+            raise InvalidNotificationProcessor
+
+    def process(self):
+        return self._execute()
+
+    def _execute(self):
+        channel = self.channel_cls.build_from_payload(
+            self.notification.payload, self.callbacks)
+        channel.execute_callbacks()
+        print('\n')
+        self.pg_connection.poll()
+
+
+class LockableNotificationProcessor(NotificationProcessor):
+
+    def validate(self):
+        if self.notification.payload == 'null':
+            raise InvalidNotificationProcessor
+
+    def process(self):
+        notification = (
+            Notification.objects.select_for_update(
+                skip_locked=True).filter(
+                channel=self.notification.channel,
+                payload=self.notification.payload,
+            ).first()
+        )
+        if notification is None:
+            print(f'Could not obtain a lock on notification'
+                  f'{self.notification} sent to channel '
+                  f'{self.notification.channel}')
+            print('\n')
+        else:
+            print(f'Obtained lock on {notification}')
+            self.notification = notification
+            self._execute()
+
+    def _execute(self):
+        super()._execute()
+        self.notification.delete()
+
+
+class NotificationRecoveryProcessor(LockableNotificationProcessor):
+
+    def validate(self):
+        if self.notification.payload != 'null':
+            raise InvalidNotificationProcessor
+
+    def process(self):
+        print('Received null payload. Processing all notifications for channel')
+        notifications = (
+            Notification.objects.select_for_update(
+                skip_locked=True).filter(channel=self.notification.channel)
+        )
+        for notification in notifications:
+            self.notification = notification
+            self._execute()
+
+
+class InvalidNotificationProcessor(Exception):
+    pass

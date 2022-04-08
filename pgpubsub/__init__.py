@@ -1,3 +1,4 @@
+from pgpubsub.channel import Channel, TriggerChannel
 from pgpubsub.listeners import (
     listener,
     pre_save_listener,
@@ -8,4 +9,7 @@ from pgpubsub.listeners import (
     post_update_listener,
     pre_delete_listener,
     post_delete_listener,
+    trigger_listener,
 )
+from pgpubsub.notify import notify, process_stored_notifications
+

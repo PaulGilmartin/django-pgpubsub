@@ -43,7 +43,6 @@ def create_first_post_for_author(old: Author, new: Author):
         content='Welcome! This is your first post',
         date=datetime.date.today(),
     )
-    #time.sleep(5)
 
 
 @pgpubsub.post_delete_listener(PostTriggerChannel)

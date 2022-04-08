@@ -8,6 +8,7 @@ import pytest
 from pgpubsub.channel import Channel
 from pgpubsub.listen import listen_to_channels, process_notifications
 from pgpubsub.models import Notification
+from pgpubsub.notify import process_stored_notifications
 from pgpubsub.tests.channels import AuthorTriggerChannel
 from pgpubsub.tests.listeners import post_reads_per_date_cache
 from pgpubsub.tests.models import Author, Post
@@ -189,7 +190,7 @@ def test_process_stored_notifications(pg_connection):
     pg_connection.notifies = []
     pg_connection.poll()
     assert 0 == len(pg_connection.notifies)
-    Notification.process_stored_notifications()
+    process_stored_notifications()
     pg_connection.poll()
     # One notification for each lockable channel
     assert 2 == len(pg_connection.notifies)
