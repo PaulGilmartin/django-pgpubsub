@@ -1,20 +1,24 @@
+from typing import Type, Union
+
 import pgtrigger
 from django.db import connection
+from django.db.models import Model
 from django.db.transaction import atomic
 
-from pgpubsub.channel import locate_channel
+from pgpubsub.channel import locate_channel, Channel
 from pgpubsub.models import Notification
 
 
 @atomic
-def notify(channel, **kwargs):
+def notify(channel: Union[Type[Channel], str], **kwargs):
     channel = locate_channel(channel)
     channel = channel(**kwargs)
     serialized = channel.serialize()
     with connection.cursor() as cursor:
         name = channel.name()
         print(f'Notifying channel {name} with payload {serialized}')
-        cursor.execute(f"select pg_notify('{name}', '{serialized}');")
+        cursor.execute(
+            f"select pg_notify('{channel.listen_safe_name()}', '{serialized}');")
         if channel.lock_notifications:
             Notification.objects.create(
                 channel=name,
@@ -26,7 +30,7 @@ def notify(channel, **kwargs):
 class Notify(pgtrigger.Trigger):
     """A trigger which notifies a channel"""
 
-    def get_func(self, model):
+    def get_func(self, model: Type[Model]):
         return f'''
             {self._build_payload(model)}
             {self._pre_notify()}
@@ -34,7 +38,7 @@ class Notify(pgtrigger.Trigger):
             RETURN NEW;
         '''
 
-    def get_declare(self, model):
+    def get_declare(self, model: Type[Model]):
         return [('payload', 'TEXT')]
 
     def _pre_notify(self):
@@ -57,4 +61,4 @@ class LockableNotify(Notify):
         return f'''
             INSERT INTO pgpubsub_notification (channel, payload)
             VALUES ('{self.name}', to_json(payload::text));
-            '''
+        '''

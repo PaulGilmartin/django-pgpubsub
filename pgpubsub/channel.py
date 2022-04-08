@@ -1,3 +1,4 @@
+import hashlib
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
@@ -15,7 +16,7 @@ registry = defaultdict(list)
 
 
 @dataclass
-class _Channel:
+class BaseChannel:
     lock_notifications = False
 
     def __post_init__(self):
@@ -23,23 +24,21 @@ class _Channel:
 
     @classmethod
     def name(cls):
-        # TODO: check channel name limits
-        module_name = inspect.getmodule(cls).__name__
-        name = f'{module_name}_{cls.__name__}'
-        # TODO: pg_notify accepts ., but LISTEN does not.
-        # What's the best way to build a channel name?
-        name = name.replace('.', '_')
-        return name.lower()
-
-    @classmethod
-    def path(cls):
         module_name = inspect.getmodule(cls).__name__
         return f'{module_name}.{cls.__name__}'
 
     @classmethod
+    def listen_safe_name(cls):
+        # Postgres LISTEN protocol accepts channel names
+        # which are at most 63 characters long.
+        model_hash = hashlib.sha1(
+            cls.name().encode()).hexdigest()[:5]
+        return f'pgpubsub_{model_hash}'
+
+    @classmethod
     def get(cls, name):
         for channel_cls, callbacks in registry.items():
-            if channel_cls.name() == name:
+            if channel_cls.listen_safe_name() == name:
                 return channel_cls, callbacks
 
     @classmethod
@@ -71,7 +70,7 @@ class _Channel:
 
 
 @dataclass
-class Channel(_Channel):
+class Channel(BaseChannel):
     @classmethod
     def deserialize(cls, payload):
         payload = super().deserialize(payload)
@@ -84,13 +83,16 @@ class Channel(_Channel):
             if origin_type is dict:
                 key_type, val_type = kwarg_type.__args__
                 deserialized_val = {
-                    cls._deserialize_arg(key, key_type): cls._deserialize_arg(val, val_type)
+                    cls._deserialize_arg(key, key_type):
+                        cls._deserialize_arg(val, val_type)
                     for key, val in val.items()
                 }
             elif origin_type in (list, tuple, set):
                 (element_type,) = kwarg_type.__args__
-                deserialized_val = origin_type(cls._deserialize_arg(x, element_type) for x in val)
-            kwargs[kwarg_name] = cls._deserialize_arg(deserialized_val, origin_type)
+                deserialized_val = origin_type(
+                    cls._deserialize_arg(x, element_type) for x in val)
+            kwargs[kwarg_name] = cls._deserialize_arg(
+                deserialized_val, origin_type)
         return kwargs
 
     def serialize(self):
@@ -101,7 +103,8 @@ class Channel(_Channel):
             origin_type = getattr(kwarg_type, '__origin__', kwarg_type)
             if origin_type is dict:
                 serialized_val = {
-                    self._date_serial(k): self._date_serial(v) for k, v in val.items()
+                    self._date_serial(k): self._date_serial(v)
+                    for k, v in val.items()
                 }
             elif origin_type in (list, tuple, set):
                 serialized_val = [self._date_serial(x) for x in val]
@@ -147,7 +150,7 @@ class TriggerPayload:
 
 
 @dataclass
-class TriggerChannel(_Channel):
+class TriggerChannel(BaseChannel):
     model = NotImplementedError
     old: django.db.models.Model
     new: django.db.models.Model

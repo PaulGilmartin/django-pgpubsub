@@ -27,5 +27,8 @@ class Command(BaseCommand):
         print(f'Processes {processes}')
         for i in range(processes):
             process = multiprocessing.Process(
-                name=f'pgpubsub_process_{i}', target=listen, args=(channel_names,))
+                name=f'pgpubsub_process_{i}',
+                target=listen,
+                args=(channel_names,),
+            )
             process.start()
