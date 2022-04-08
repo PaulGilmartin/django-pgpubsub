@@ -11,15 +11,15 @@ from pgpubsub.models import Notification
 
 @atomic
 def notify(channel: Union[Type[Channel], str], **kwargs):
-    channel = locate_channel(channel)
-    channel = channel(**kwargs)
+    channel_cls = locate_channel(channel)
+    channel = channel_cls(**kwargs)
     serialized = channel.serialize()
     with connection.cursor() as cursor:
-        name = channel.name()
+        name = channel_cls.name()
         print(f'Notifying channel {name} with payload {serialized}')
         cursor.execute(
-            f"select pg_notify('{channel.listen_safe_name()}', '{serialized}');")
-        if channel.lock_notifications:
+            f"select pg_notify('{channel_cls.listen_safe_name()}', '{serialized}');")
+        if channel_cls.lock_notifications:
             Notification.objects.create(
                 channel=name,
                 payload=serialized,

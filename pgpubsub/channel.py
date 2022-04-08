@@ -71,6 +71,7 @@ class BaseChannel:
 
 @dataclass
 class Channel(BaseChannel):
+
     @classmethod
     def deserialize(cls, payload):
         payload = super().deserialize(payload)

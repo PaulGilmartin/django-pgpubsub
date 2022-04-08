@@ -176,3 +176,23 @@ def test_author_bulk_insert_notify(pg_connection):
     post_authors = Post.objects.values_list('author_id', flat=True)
     assert [author.pk for author in authors] == list(post_authors)
 
+
+@pytest.mark.django_db(transaction=True)
+def test_process_stored_notifications(pg_connection):
+    Author.objects.create(name='Billy')
+    Author.objects.create(name='Billy2')
+    assert 2 == len(pg_connection.notifies)
+    assert 2 == Notification.objects.count()
+    assert 0 == Post.objects.count()
+    # Simulate when the listener fails to
+    # receive notifications
+    pg_connection.notifies = []
+    pg_connection.poll()
+    assert 0 == len(pg_connection.notifies)
+    Notification.process_stored_notifications()
+    pg_connection.poll()
+    # One notification for each lockable channel
+    assert 2 == len(pg_connection.notifies)
+    process_notifications(pg_connection)
+    assert 0 == Notification.objects.count()
+    assert 2 == Post.objects.count()

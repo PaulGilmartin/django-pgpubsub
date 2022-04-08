@@ -58,24 +58,47 @@ def process_notifications(pg_connection):
         with transaction.atomic():
             if channel_cls.lock_notifications:
                 channel_name = notification.channel
-                notification = (
-                    Notification.objects.select_for_update(
-                        skip_locked=True).filter(
-                        channel=channel_name,
-                        payload=notification.payload,
-                    ).first()
-                )
-                if notification is None:
-                    print(f'Could not obtain a lock on notification'
-                          f'{notification} sent to channel {channel_name}')
-                    print('\n')
-                    continue
+
+                if notification.payload == 'null':
+                    print('Received null payload. Processing all notifications for channel')
+                    notifications = (
+                        Notification.objects.select_for_update(
+                            skip_locked=True).filter(channel=notification.channel)
+                    )
+                    for notification in notifications:
+                        _process_notification(
+                            pg_connection, channel_cls, callbacks, notification)
+
                 else:
-                    print(f'Obtained lock on {notification}')
-            channel = channel_cls.build_from_payload(
-                notification.payload, callbacks)
-            channel.execute_callbacks()
-            if channel_cls.lock_notifications:
-                notification.delete()
-            print('\n')
-            pg_connection.poll()
+                    print('Received non-null payload.')
+                    notification = (
+                        Notification.objects.select_for_update(
+                            skip_locked=True).filter(
+                            channel=channel_name,
+                            payload=notification.payload,
+                        ).first()
+                    )
+                    if notification is None:
+                        print(f'Could not obtain a lock on notification'
+                              f'{notification} sent to channel {channel_name}')
+                        print('\n')
+                        continue
+                    else:
+                        print(f'Obtained lock on {notification}')
+                        _process_notification(
+                            pg_connection, channel_cls, callbacks, notification)
+            else:
+                print(f'Processing non-stored notification {notification}')
+                _process_notification(
+                    pg_connection, channel_cls, callbacks, notification)
+
+
+def _process_notification(
+        pg_connection, channel_cls, callbacks, notification):
+    channel = channel_cls.build_from_payload(
+        notification.payload, callbacks)
+    channel.execute_callbacks()
+    if channel_cls.lock_notifications:
+        notification.delete()
+    print('\n')
+    pg_connection.poll()
