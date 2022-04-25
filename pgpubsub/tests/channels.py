@@ -20,8 +20,10 @@ class PostReads(Reads):
 @dataclass
 class AuthorTriggerChannel(TriggerChannel):
     model = Author
+    lock_notifications = True
 
 
 @dataclass
 class PostTriggerChannel(TriggerChannel):
     model = Post
+    lock_notifications = True
