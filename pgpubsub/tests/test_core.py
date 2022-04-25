@@ -7,13 +7,11 @@ import pytest
 
 from pgpubsub.channel import Channel
 from pgpubsub.listen import listen_to_channels, process_notifications
+from pgpubsub.models import Notification
+from pgpubsub.notify import process_stored_notifications
+from pgpubsub.tests.channels import AuthorTriggerChannel
 from pgpubsub.tests.listeners import post_reads_per_date_cache
 from pgpubsub.tests.models import Author, Post
-
-
-def _deserialize(channel_cls, **kwargs):
-    serialized = channel_cls(**kwargs)._serialize()
-    return channel_cls.deserialize(serialized)
 
 
 def test_deserialize_1():
@@ -24,7 +22,8 @@ def test_deserialize_1():
         default_arg1: float = 0.0
 
     deserialized = _deserialize(MyChannel, arg1='1', arg2={1: 2}, default_arg1=3.4)
-    assert {'arg1': '1', 'arg2': {1: 2}, 'default_arg1': 3.4} == deserialized
+    assert {'arg1': '1', 'arg2': {1: 2},
+            'default_arg1': 3.4} == deserialized
 
 
 def test_deserialize_2():
@@ -34,8 +33,11 @@ def test_deserialize_2():
         default_arg1: bool = False
         default_arg2: int = 0
 
-    deserialized = _deserialize(MyChannel, arg1={'Paul': False}, default_arg1=True)
-    assert {'arg1': {'Paul': False}, 'default_arg1': True, 'default_arg2': 0} == deserialized
+    deserialized = _deserialize(
+        MyChannel, arg1={'Paul': False}, default_arg1=True)
+    assert {'arg1': {'Paul': False},
+            'default_arg1': True,
+            'default_arg2': 0} == deserialized
 
 
 def test_deserialize_3():
@@ -57,9 +59,15 @@ def test_deserialize_3():
 
     assert {
         'arg1': datetime.date(2021, 1, 1),
-        'arg2': {datetime.date(2021, 1, 7): True, datetime.date(2021, 1, 17): False},
+        'arg2': {datetime.date(2021, 1, 7): True,
+                 datetime.date(2021, 1, 17): False},
         'arg3': {'chosen_date': datetime.datetime(2021, 1, 1, 9, 30)},
     } == deserialized
+
+
+def _deserialize(channel_cls, **kwargs):
+    serialized = channel_cls(**kwargs).serialize()
+    return channel_cls.deserialize(serialized)
 
 
 def test_deserialize_4():
@@ -90,20 +98,29 @@ def pg_connection():
 @pytest.mark.django_db(transaction=True)
 def test_post_fetch_notify(pg_connection):
     author = Author.objects.create(name='Billy')
+    Notification.from_channel(channel=AuthorTriggerChannel).get()
     assert 1 == len(pg_connection.notifies)
     today = datetime.date.today()
-    post = Post.objects.create(author=author, content='first post', date=today)
+    post = Post.objects.create(
+        author=author, content='first post', date=today)
     assert post_reads_per_date_cache[today] == {}
     Post.fetch(post.pk)
+    assert 1 == Notification.objects.count()
+    pg_connection.poll()
     assert 2 == len(pg_connection.notifies)
     process_notifications(pg_connection)
     assert post_reads_per_date_cache[today] == {post.pk: 1}
+    assert 0 == Notification.objects.count()
 
 
 @pytest.mark.django_db(transaction=True)
 def test_author_insert_notify(pg_connection):
     author = Author.objects.create(name='Billy')
     assert 1 == len(pg_connection.notifies)
+    stored_notification = Notification.from_channel(
+        channel=AuthorTriggerChannel).get()
+    assert 'old' in stored_notification.payload
+    assert 'new' in stored_notification.payload
     assert not Post.objects.exists()
     process_notifications(pg_connection)
     assert 1 == Post.objects.count()
@@ -115,10 +132,6 @@ def test_author_insert_notify(pg_connection):
 def test_author_insert_notify_in_transaction(pg_connection):
     with atomic():
         author = Author.objects.create(name='Billy')
-
-    # TODO: Understand why pg_connection.poll() is only
-    # necessary when we invoke a notification inside
-    # a transaction.
     pg_connection.poll()
     assert 1 == len(pg_connection.notifies)
     assert not Post.objects.exists()
@@ -166,11 +179,21 @@ def test_author_bulk_insert_notify(pg_connection):
 
 
 @pytest.mark.django_db(transaction=True)
-def test_post_delete_notify(pg_connection, mocker):
-    mock_email = mocker.patch('pgpubsub.tests.listeners.email')
-    author = Author.objects.create(name='Billy')
+def test_process_stored_notifications(pg_connection):
+    Author.objects.create(name='Billy')
+    Author.objects.create(name='Billy2')
+    assert 2 == len(pg_connection.notifies)
+    assert 2 == Notification.objects.count()
+    assert 0 == Post.objects.count()
+    # Simulate when the listener fails to
+    # receive notifications
+    pg_connection.notifies = []
+    pg_connection.poll()
+    assert 0 == len(pg_connection.notifies)
+    process_stored_notifications()
+    pg_connection.poll()
+    # One notification for each lockable channel
+    assert 2 == len(pg_connection.notifies)
     process_notifications(pg_connection)
-    assert 1 == Post.objects.count()
-    Post.objects.all().delete()
-    process_notifications(pg_connection)
-    mock_email.assert_called_with(author)
+    assert 0 == Notification.objects.count()
+    assert 2 == Post.objects.count()
