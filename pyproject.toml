@@ -42,7 +42,7 @@ classifiers = [
   "Framework :: Django",
 ]
 license = "BSD-3-Clause"
-readme = "README.rst"
+readme = "README.md"
 homepage = "https://github.com/Opus10/django-pgpubsub"
 repository = "https://github.com/Opus10/django-pgpubsub"
 documentation = "https://django-pgpubsub.readthedocs.io"
