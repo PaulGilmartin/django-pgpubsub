@@ -33,6 +33,7 @@ def create_first_post_for_author(old, new):
         content='Welcome! This is your first post',
         date=datetime.date.today(),
     )
+    time.sleep(3)
 
 
 @post_delete_listener(PostTriggerChannel)
