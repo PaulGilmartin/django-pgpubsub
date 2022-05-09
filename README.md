@@ -14,6 +14,12 @@ messaging services, such as
 [Celery](https://docs.celeryq.dev/en/stable/search.html?q=ampq)
 
 
+Primary Authors
+---------------
+[Paul Gilmartin](https://github.com/PaulGilmartin)
+[Wesley Kendall](https://github.com/wesleykendall)
+
+
 Highlights
 ==========
 
