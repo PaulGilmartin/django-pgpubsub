@@ -8,9 +8,8 @@ import json
 from pydoc import locate
 from typing import Callable, Dict, Union, List
 
-import django
 from django.apps import apps
-from django.db import connection
+from django.db import models
 
 
 registry = defaultdict(list)
@@ -159,8 +158,8 @@ class TriggerPayload:
 class TriggerChannel(BaseChannel):
 
     model = NotImplementedError
-    old: django.db.models.Model
-    new: django.db.models.Model
+    old: models.Model
+    new: models.Model
 
     @classmethod
     def deserialize(cls, payload: Union[Dict, str]):
