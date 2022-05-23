@@ -104,7 +104,7 @@ Prerequisites
 -------------
 
 Before using this library, you must be running Django 2.2 (or later) on top
-of a (single) PostgreSQL 9.4 (or later) database.
+of a (single) PostgreSQL 11 (or later) database.
 
 
 Installing
