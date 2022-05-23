@@ -66,7 +66,9 @@ def process_notifications(pg_connection):
                     processor = processor(notification, pg_connection)
                 except InvalidNotificationProcessor:
                     continue
-                processor.process()
+                else:
+                    processor.process()
+                    break
 
 
 class NotificationProcessor:
