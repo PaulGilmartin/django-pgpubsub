@@ -114,6 +114,9 @@ Installing
 
 ``django-pgpubsub`` ships with a ``Notification`` model. This table must
 be added to the app's database via the usual django ``migrate`` command.
+We should also add `pgpubsub` and `pgtrigger` into `INSTALLED_APPS`.
+Additionally, if we wish to run the `pgpubsub` tests, we need to add
+`pgpubsub.tests` into `INSTALLED_APPS` too.
 
 Minimal Example
 ---------------
@@ -133,7 +136,7 @@ We define our channel in our app's ``channels.py`` file as a dataclass
 as follows:
 
 ```python
-from pgpubsub.channels import TriggerChannel
+from pgpubsub.channel import TriggerChannel
 
 @dataclass
 class AuthorTriggerChannel(TriggerChannel):
@@ -162,7 +165,19 @@ def create_first_post_for_author(old: Author, new: Author):
 
 Since ``AuthorTriggerChannel`` is a trigger-based channel, we need
 to perform a ``migrate`` command after first defining the above listener
-so as to install the underlying trigger in the database.
+so as to install the underlying trigger in the database. We must also ensure
+that this listeners.py module is imported into the app's config class:
+
+```python
+# tests/apps.py
+
+class TestsConfig(AppConfig):
+    name = 'tests'
+
+    def ready(self):
+        import tests.listeners
+```
+
 
 **Start Listening**
 
@@ -235,7 +250,7 @@ through which notifications will be sent to update the post-reads-per-day cache:
 # channels.py
 import datetime
 
-from pgpubsub.channels import Channel
+from pgpubsub.channel import Channel
 
 
 @dataclass
@@ -255,7 +270,7 @@ of an ``Author`` object. To achieve this, we define our channel like so (
 also in our apps ``channels.py`` module):
 
 ```python
-from pgpubsub.channels import TriggerChannel
+from pgpubsub.channel import TriggerChannel
 
 @dataclass
 class AuthorTriggerChannel(TriggerChannel):
@@ -510,7 +525,7 @@ processing behaviour for our ``AuthorTriggerChannel``, where we want to create e
 ``Post`` whenever an ``Author`` row is inserted:
 
 ```python
-from pgpubsub.channels import TriggerChannel
+from pgpubsub.channel import TriggerChannel
 
 @dataclass
 class AuthorTriggerChannel(TriggerChannel):
