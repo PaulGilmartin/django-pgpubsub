@@ -20,14 +20,22 @@ class Command(BaseCommand):
             type=int,
             dest='processes',
         )
+        parser.add_argument(
+            '--recover',
+            action='store_true',
+            dest='recover',
+            default=False,
+            help='Process all stored notifications for selected channels.',
+        )
 
     def handle(self, *args, **options):
         channel_names = options.get('channels')
         processes = options.get('processes') or 1
+        recover = options.get('recover', False)
         for i in range(processes):
             process = multiprocessing.Process(
                 name=f'pgpubsub_process_{i}',
                 target=listen,
-                args=(channel_names,),
+                args=(channel_names, recover),
             )
             process.start()

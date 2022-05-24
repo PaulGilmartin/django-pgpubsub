@@ -25,7 +25,7 @@ def notify(channel: Union[Type[Channel], str], **kwargs):
     return serialized
 
 
-def process_stored_notifications():
+def process_stored_notifications(channels=None):
     """Have processes listening to channels process current stored notifications.
 
     This function sends a notification with an 'null' payload to all listening channels.
@@ -35,10 +35,23 @@ def process_stored_notifications():
     attempted to notify a listener (e.g. if all listeners happened to be
     down at that point).
     """
+    if channels is None:
+        channels = registry
+    else:
+        channels = [locate_channel(channel) for channel in channels]
+        channels = {
+            channel: callbacks
+            for channel, callbacks in registry.items()
+            if issubclass(channel, tuple(channels))
+        }
     with connection.cursor() as cursor:
-        lock_channels = [c for c in registry if c.lock_notifications]
+        lock_channels = [c for c in channels if c.lock_notifications]
         for channel_cls in lock_channels:
             payload = 'null'
-            print(f'Notifying channel {channel_cls.name()} with payload {payload}')
+            print(
+                f'Notifying channel {channel_cls.name()} to recover '
+                f'previously stored notifications.')
             cursor.execute(
                 f"select pg_notify('{channel_cls.listen_safe_name()}', '{payload}');")
+
+

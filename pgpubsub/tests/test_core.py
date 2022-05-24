@@ -6,7 +6,7 @@ from django.db.transaction import atomic
 import pytest
 
 from pgpubsub.channel import Channel
-from pgpubsub.listen import listen_to_channels, process_notifications
+from pgpubsub.listen import listen_to_channels, process_notifications, listen
 from pgpubsub.models import Notification
 from pgpubsub.notify import process_stored_notifications
 from pgpubsub.tests.channels import AuthorTriggerChannel
@@ -197,3 +197,41 @@ def test_process_stored_notifications(pg_connection):
     process_notifications(pg_connection)
     assert 0 == Notification.objects.count()
     assert 2 == Post.objects.count()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_recover_notifications(pg_connection):
+    Author.objects.create(name='Billy')
+    Author.objects.create(name='Billy2')
+    pg_connection.poll()
+    assert 2 == len(pg_connection.notifies)
+    assert 2 == Notification.objects.count()
+    assert 0 == Post.objects.count()
+    # Simulate when the listener fails to
+    # receive notifications
+    pg_connection.notifies = []
+    pg_connection.poll()
+    assert 0 == len(pg_connection.notifies)
+    listen(recover=True, poll_count=1)
+    pg_connection.poll()
+    assert 0 == Notification.objects.count()
+    assert 2 == Post.objects.count()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_do_not_recover_notifications(pg_connection):
+    Author.objects.create(name='Billy')
+    Author.objects.create(name='Billy2')
+    pg_connection.poll()
+    assert 2 == len(pg_connection.notifies)
+    assert 2 == Notification.objects.count()
+    assert 0 == Post.objects.count()
+    # Simulate when the listener fails to
+    # receive notifications
+    pg_connection.notifies = []
+    pg_connection.poll()
+    assert 0 == len(pg_connection.notifies)
+    listen(recover=False, poll_count=1)
+    pg_connection.poll()
+    assert 2 == Notification.objects.count()
+    assert 0 == Post.objects.count()
