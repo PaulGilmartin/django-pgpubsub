@@ -1,4 +1,3 @@
-import logging
 import multiprocessing
 import select
 from typing import List, Union
@@ -6,6 +5,7 @@ from typing import List, Union
 from django.db import connection, transaction
 from psycopg2._psycopg import Notify
 
+from pgpubsub import process_stored_notifications
 from pgpubsub.channel import (
     BaseChannel,
     Channel,
@@ -16,9 +16,17 @@ from pgpubsub.channel import (
 from pgpubsub.models import Notification
 
 
-def listen(channels: Union[List[BaseChannel], List[str]]=None):
+def listen(
+    channels: Union[List[BaseChannel], List[str]]=None,
+    recover: bool=False,
+    poll_count: Union[None, int]=None,
+):
     pg_connection = listen_to_channels(channels)
-    while True:
+    if recover:
+        process_stored_notifications(channels)
+        process_notifications(pg_connection)
+    poll_count = poll_count or float('inf')
+    while poll_count:
         if select.select([pg_connection], [], [], 1) == ([], [], []):
             print('Listening for notifications...\n')
         else:
@@ -31,6 +39,7 @@ def listen(channels: Union[List[BaseChannel], List[str]]=None):
                     target=listen, args=(channels,))
                 process.start()
                 raise
+        poll_count -= 1
 
 
 def listen_to_channels(channels: Union[List[BaseChannel], List[str]]=None):
@@ -133,7 +142,8 @@ class NotificationRecoveryProcessor(LockableNotificationProcessor):
             raise InvalidNotificationProcessor
 
     def process(self):
-        print('Received null payload. Processing all notifications for channel')
+        print(f'Processing all notifications for '
+              f'channel {self.channel_cls.name()}')
         notifications = (
             Notification.objects.select_for_update(
                 skip_locked=True).filter(channel=self.notification.channel)

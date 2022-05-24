@@ -1,0 +1,40 @@
+When running tests.
+
+1. Edit docker-compose.yml as follows
+
+version: "3.3"
+
+services:
+  db:
+    image: postgres:13
+    volumes:
+      - ./.db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_NAME=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+  app:
+    image: opus10/circleci-public-django-app
+    volumes:
+      - ./:/django-pgpubsub:delegated
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/postgres
+    entrypoint: ''
+    #- "/django-pgpubsub/docker_entrypoint.sh"
+    depends_on:
+      - db
+
+2. Next, run make setup
+3. Now edit image to point to django-pgpubsub_app
+4. Now run docker compose up
+5. May need to set DATABASES to
+DATABASES = {
+    "default": {
+        "ENGINE": 'django.db.backends.postgresql',
+        "NAME":'postgres_2', # needed because postgres db in a bad state
+        "USER": 'postgres',
+        "PASSWORD": 'postgres',
+        "HOST":'db',
+        "PORT": '5432',
+    }
+}
