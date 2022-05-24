@@ -407,7 +407,7 @@ will automatically spins up a secondary process to continue listening before the
 exception ends the initial process. This means that we do not have to worry about
 restarting our listening processes any time a listener incurs a python level exception.
 
-The ``listen`` command accepts two optional arguments:
+The ``listen`` command accepts three optional arguments:
 
 * ``--channels``: a space separated list of the
   full module paths of the channels we wish to listen to.
@@ -429,6 +429,15 @@ The ``listen`` command accepts two optional arguments:
   to our channel. See the "Lockable Notifications and Exactly-Once Messaging"
   section below for more.
 
+* ``--recover``: when supplied, we process all *stored* notifications for any
+   of the selected channels. When no `channels` argument is supplied with `recover`,
+   we process notifications of all registered channels with `lock_notifications=True`.
+   See the *Recovery* section below for more.
+
+Here's an example of using all three options in one command:
+```
+./manage.py listen --channels 'pgpubsub.tests.channels.AuthorTriggerChannel' --processes 2 --recover
+```
 
 Notifications
 -------------
@@ -581,6 +590,10 @@ of the payload in our database.
 all stored ``Notifications`` from the database and sends them to their respective channels
 to be processed. This allows to recover from scenarios like the one in the paragraph described
 above.
+
+Note that this recovery option can be enabled whenever we use the `listen` management command
+by supplying it with the `--recover` option. This will tell the listening processes to replay
+any missed stored notifications automatically when it starts up.
 
 
 Live Demos
