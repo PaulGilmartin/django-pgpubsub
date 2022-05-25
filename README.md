@@ -136,7 +136,11 @@ We define our channel in our app's ``channels.py`` file as a dataclass
 as follows:
 
 ```python
+from dataclasses import dataclass
+
 from pgpubsub.channel import TriggerChannel
+from pgpubsub.tests.models import Author
+
 
 @dataclass
 class AuthorTriggerChannel(TriggerChannel):
@@ -149,9 +153,12 @@ A *listener* is the function which processes notifications sent through a channe
 We define our listener in our app's ``listeners.py`` file as follows:
 
 ```python
-import pgpubsub
+import datetime
 
-from .channels import AuthorTriggerChannel
+import pgpubsub
+from pgpubsub.tests.channels import AuthorTriggerChannel
+from pgpubsub.tests.models import Author, Post
+
 
 @pgpubsub.post_insert_listener(AuthorTriggerChannel)
 def create_first_post_for_author(old: Author, new: Author):
@@ -163,19 +170,23 @@ def create_first_post_for_author(old: Author, new: Author):
     )
 ```
 
-Since ``AuthorTriggerChannel`` is a trigger-based channel, we need
+**Note that since ``AuthorTriggerChannel`` is a trigger-based channel, we need
 to perform a ``migrate`` command after first defining the above listener
-so as to install the underlying trigger in the database. We must also ensure
-that this listeners.py module is imported into the app's config class:
+so as to install the underlying trigger in the database.**
+
+Finally, we must also ensure  that this listeners.py module is imported into the app's config
+class. In this example, our app is calls "tests":
 
 ```python
 # tests/apps.py
+from django.apps import AppConfig
+
 
 class TestsConfig(AppConfig):
     name = 'tests'
 
     def ready(self):
-        import tests.listeners
+        import pgpubsub.tests.listeners
 ```
 
 
@@ -248,6 +259,7 @@ through which notifications will be sent to update the post-reads-per-day cache:
 
 ```python
 # channels.py
+from dataclasses import dataclass
 import datetime
 
 from pgpubsub.channel import Channel
@@ -270,7 +282,10 @@ of an ``Author`` object. To achieve this, we define our channel like so (
 also in our apps ``channels.py`` module):
 
 ```python
+from dataclasses import dataclass
+
 from pgpubsub.channel import TriggerChannel
+from pgpubsub.tests.models import Author
 
 @dataclass
 class AuthorTriggerChannel(TriggerChannel):
@@ -317,9 +332,11 @@ we implement a listener function like so:
 
 ```python
 # tests/listeners.py
+from collections import defaultdict
 import datetime
 
 import pgpubsub
+from pgpubsub.tests.channels import PostReads
 
 # Simple cache for illustrative purposes only
 post_reads_per_date_cache = defaultdict(dict)
@@ -354,9 +371,11 @@ decorator:
 
 ```python
 # tests/listeners.py
-import pgpubsub
+import datetime
 
-from .channels import AuthorTriggerChannel
+import pgpubsub
+from pgpubsub.tests.channels import AuthorTriggerChannel
+from pgpubsub.tests.models import Author, Post
 
 
 @pgpubsub.post_insert_listener(AuthorTriggerChannel)
@@ -380,17 +399,22 @@ whenever an ``Author`` object is inserted into the database. Note that
 as with all triggers defined using ``django-pgtrigger``, this trigger
 is first written to the database after a migration.
 
+**Thus, we must perform a django `migrate` command after adding
+a listener on a trigger channel as above.**
+
 Finally, we must also ensure that this ``listeners.py`` module is imported
 into the app's config class (similar to how one would use django signals):
 
 ```python
 # tests/apps.py
+from django.apps import AppConfig
+
 
 class TestsConfig(AppConfig):
     name = 'tests'
 
     def ready(self):
-        import tests.listeners
+        import pgpubsub.tests.listeners
 ```
 
 Listening
@@ -455,6 +479,10 @@ of course be utilised in whatever API call is used when a user reads a post:
 
 ```python
 # tests/models.py
+import datetime
+
+from django.db import models
+
 import pgpubsub
 
 class Post(models.Model):
@@ -488,6 +516,12 @@ layer whenever the corresponding trigger is invoked. To understand this in a bit
 more detail, let's consider our example above:
 
 ```python
+import datetime
+
+import pgpubsub
+from pgpubsub.tests.channels import AuthorTriggerChannel
+from pgpubsub.tests.models import Author, Post
+
 @pgpubsub.post_insert_listener(AuthorTriggerChannel)
 def create_first_post_for_author(old: Author, new: Author):
     print(f'Creating first post for {new.name}')
@@ -509,7 +543,6 @@ its creation. Associating the channel like so
 ```python
 post_insert_listener(AuthorTriggerChannel)
 ```
-
 
 ensures that the notification is sent via the ``AuthorTriggerChannel`` and hence ends up being
 processed by the ``create_first_post_for_author`` listener. To examine the internals of the trigger functions used to send notifications at the database level,
@@ -534,13 +567,18 @@ processing behaviour for our ``AuthorTriggerChannel``, where we want to create e
 ``Post`` whenever an ``Author`` row is inserted:
 
 ```python
+from dataclasses import dataclass
+
 from pgpubsub.channel import TriggerChannel
+from pgpubsub.tests.models import Author
 
 @dataclass
 class AuthorTriggerChannel(TriggerChannel):
     model = Author
     lock_notifications = True
 ```
+**Note that when we change the value of `lock_notifications` on a trigger based
+channel, we must perform a `migrate` command after the change.**
 
 Enabling ``lock_notifications`` on a channel has the following effect:
 
