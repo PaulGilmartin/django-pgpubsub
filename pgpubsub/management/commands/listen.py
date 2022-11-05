@@ -32,7 +32,7 @@ class Command(BaseCommand):
         channel_names = options.get('channels')
         processes = options.get('processes') or 1
         recover = options.get('recover', False)
-        multiprocessing.set_start_method('fork')
+        multiprocessing.set_start_method('fork', force=True)
         for i in range(processes):
             process = multiprocessing.Process(
                 name=f'pgpubsub_process_{i}',
