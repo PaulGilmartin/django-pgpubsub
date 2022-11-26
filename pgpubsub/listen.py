@@ -27,9 +27,10 @@ def listen(
         process_stored_notifications(channels)
         process_notifications(pg_connection)
     poll_count = poll_count or float('inf')
+    print('Listening for notifications...')
     while poll_count:
         if select.select([pg_connection], [], [], 1) == ([], [], []):
-            print('Listening for notifications...\n')
+            pass
         else:
             try:
                 process_notifications(pg_connection)
