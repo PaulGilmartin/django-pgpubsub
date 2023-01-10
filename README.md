@@ -399,7 +399,7 @@ whenever an ``Author`` object is inserted into the database. Note that
 as with all triggers defined using ``django-pgtrigger``, this trigger
 is first written to the database after a migration.
 
-**Thus, we must perform a django `migrate` command after adding
+**Thus, we must perform a django `migrate` command after adding (or changing)
 a listener on a trigger channel as above.**
 
 Finally, we must also ensure that this ``listeners.py`` module is imported

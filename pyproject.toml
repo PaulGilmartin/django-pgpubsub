@@ -27,7 +27,7 @@ name = "django-pgpubsub"
 packages = [
   { include = "pgpubsub" }
 ]
-version = "0.0.8"
+version = "1.0.1"
 description = "A distributed task processing framework for Django built on top of the Postgres NOTIFY/LISTEN protocol."
 authors = ["Opus 10 Engineering"]
 classifiers = [
