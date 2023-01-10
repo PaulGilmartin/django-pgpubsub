@@ -7,10 +7,11 @@ from django.db.transaction import atomic
 import pgpubsub
 from pgpubsub.tests.channels import (
     AuthorTriggerChannel,
+    MediaTriggerChannel,
     PostReads,
     PostTriggerChannel,
 )
-from pgpubsub.tests.models import Author, Post
+from pgpubsub.tests.models import Author, Media, Post
 
 post_reads_per_date_cache = defaultdict(dict)
 author_reads_cache = {}
@@ -55,3 +56,11 @@ def email_author(old: Post, new: Post):
 
 def email(author: Author):
     pass
+
+
+@pgpubsub.post_save_listener(MediaTriggerChannel)
+def scan_media(old: Media, new: Media):
+    if not old:
+        print(f'Perform virus scan on the new media {new}.')
+    else:
+        print(f'Media updated; scan {new} all over again.')

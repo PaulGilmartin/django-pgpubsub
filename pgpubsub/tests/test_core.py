@@ -9,9 +9,9 @@ from pgpubsub.channel import Channel
 from pgpubsub.listen import listen_to_channels, process_notifications, listen
 from pgpubsub.models import Notification
 from pgpubsub.notify import process_stored_notifications
-from pgpubsub.tests.channels import AuthorTriggerChannel
-from pgpubsub.tests.listeners import post_reads_per_date_cache
-from pgpubsub.tests.models import Author, Post
+from pgpubsub.tests.channels import AuthorTriggerChannel, MediaTriggerChannel
+from pgpubsub.tests.listeners import post_reads_per_date_cache, scan_media
+from pgpubsub.tests.models import Author, Media, Post
 
 
 def test_deserialize_1():
@@ -193,7 +193,7 @@ def test_process_stored_notifications(pg_connection):
     process_stored_notifications()
     pg_connection.poll()
     # One notification for each lockable channel
-    assert 2 == len(pg_connection.notifies)
+    assert 3 == len(pg_connection.notifies)
     process_notifications(pg_connection)
     assert 0 == Notification.objects.count()
     assert 2 == Post.objects.count()
@@ -235,3 +235,13 @@ def test_do_not_recover_notifications(pg_connection):
     pg_connection.poll()
     assert 2 == Notification.objects.count()
     assert 0 == Post.objects.count()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_media_insert_notify(pg_connection):
+    Media.objects.create(name='avatar.jpg', content_type='image/png', size=15000)
+    assert 1 == len(pg_connection.notifies)
+    stored_notification = Notification.from_channel(
+        channel=MediaTriggerChannel).get()
+    assert 'old' in stored_notification.payload
+    assert 'new' in stored_notification.payload

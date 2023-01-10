@@ -2,7 +2,7 @@ from functools import wraps
 from typing import Union, Type
 
 import pgtrigger
-from pgtrigger import Q, Trigger
+from pgtrigger import Trigger
 
 from pgpubsub.channel import (
     locate_channel,
@@ -26,7 +26,7 @@ def pre_save_listener(channel: Union[Type[TriggerChannel], str]):
     return _trigger_action_listener(
         channel,
         pgtrigger.Before,
-        Q(pgtrigger.Update) | Q(pgtrigger.Insert),
+        pgtrigger.Update | pgtrigger.Insert,
         )
 
 
@@ -34,7 +34,7 @@ def post_save_listener(channel: Union[Type[TriggerChannel], str]):
     return _trigger_action_listener(
         channel,
         pgtrigger.After,
-        Q(pgtrigger.Update) | Q(pgtrigger.Insert),
+        pgtrigger.Update | pgtrigger.Insert,
         )
 
 
