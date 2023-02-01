@@ -21,7 +21,7 @@ def listen(
     recover: bool=False,
     poll_count: Union[None, int]=None,
 ):
-    #multiprocessing.set_start_method('fork', force=True)
+    multiprocessing.set_start_method('forkserver', force=True)
     pg_connection = listen_to_channels(channels)
     if recover:
         process_stored_notifications(channels)
