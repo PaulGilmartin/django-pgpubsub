@@ -21,7 +21,7 @@ def listen(
     recover: bool=False,
     poll_count: Union[None, int]=None,
 ):
-    multiprocessing.set_start_method('forkserver', force=True)
+    multiprocessing.set_start_method('fork', force=True)
     pg_connection = listen_to_channels(channels)
     if recover:
         process_stored_notifications(channels)
@@ -37,6 +37,7 @@ def listen(
             except Exception as e:
                 print(f'Encountered exception {e}')
                 print('Restarting process')
+                connection.close()
                 process = multiprocessing.Process(
                     target=listen, args=(channels,))
                 process.start()
