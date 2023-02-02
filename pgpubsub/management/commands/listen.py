@@ -1,6 +1,7 @@
 import multiprocessing
 
 from django.core.management import BaseCommand
+from django.db import connection
 
 from pgpubsub.listen import listen
 
@@ -33,6 +34,7 @@ class Command(BaseCommand):
         processes = options.get('processes') or 1
         recover = options.get('recover', False)
         multiprocessing.set_start_method('fork', force=True)
+        connection.close()
         for i in range(processes):
             process = multiprocessing.Process(
                 name=f'pgpubsub_process_{i}',

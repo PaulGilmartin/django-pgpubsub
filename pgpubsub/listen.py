@@ -37,6 +37,7 @@ def listen(
             except Exception as e:
                 print(f'Encountered exception {e}')
                 print('Restarting process')
+                connection.close()
                 process = multiprocessing.Process(
                     target=listen, args=(channels,))
                 process.start()
