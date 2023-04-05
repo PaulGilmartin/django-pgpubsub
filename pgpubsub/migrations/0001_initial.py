@@ -2,21 +2,30 @@
 
 from django.db import migrations, models
 
+try:
+    from django.db.models import JSONField
+except:
+    from django.contrib.postgres.fields import JSONField
+
 
 class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
             name='Notification',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('channel', models.CharField(max_length=63)),
-                ('payload', models.JSONField()),
+                ('payload', JSONField()),
             ],
         ),
     ]
