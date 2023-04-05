@@ -2,15 +2,19 @@ from typing import Type
 
 from django.db import models
 
+try:
+    from django.db.models import JSONField
+except:
+    from django.contrib.postgres.fields import JSONField
+
 from pgpubsub.channel import BaseChannel
 
 MAX_POSTGRES_CHANNEL_LENGTH = 63
 
 
 class Notification(models.Model):
-    channel = models.CharField(
-        max_length=MAX_POSTGRES_CHANNEL_LENGTH)
-    payload = models.JSONField()
+    channel = models.CharField(max_length=MAX_POSTGRES_CHANNEL_LENGTH)
+    payload = JSONField()
 
     def __repr__(self):
         return (
