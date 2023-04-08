@@ -22,7 +22,7 @@ class Notify(pgtrigger.Trigger):
         return ''
 
     def _build_payload(self, model):
-        return  f'''
+        return f'''
             payload := json_build_object(
                 'app', '{model._meta.app_label}',
                 'model', '{model.__name__}',

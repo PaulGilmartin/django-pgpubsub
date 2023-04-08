@@ -10,6 +10,7 @@ from typing import Callable, Dict, Union, List
 
 from django.apps import apps
 from django.db import models
+from django.db.models import fields
 
 
 registry = defaultdict(list)
@@ -146,12 +147,21 @@ class TriggerPayload:
     @property
     def old(self):
         if self._old_row_data:
-            return self._model(**self._old_row_data)
+            return self._entity_from_json(self._model, self._old_row_data)
 
     @property
     def new(self):
         if self._new_row_data:
-            return self._model(**self._new_row_data)
+            return self._entity_from_json(self._model, self._new_row_data)
+
+    def _entity_from_json(self, model, model_payload):
+        data = {}
+        for k, v in model_payload.items():
+            if isinstance(model._meta.get_field(k), fields.DateTimeField):
+                data[k] = datetime.datetime.fromisoformat(v)
+            else:
+                data[k] = v
+        return model(**data)
 
 
 @dataclass

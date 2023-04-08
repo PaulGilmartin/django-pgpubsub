@@ -1,15 +1,20 @@
 from dataclasses import dataclass
 import datetime
+import json
 from typing import Dict, List, Set, Tuple
 
 from django.db.transaction import atomic
 import pytest
 
-from pgpubsub.channel import Channel
+from pgpubsub.channel import Channel, TriggerChannel
 from pgpubsub.listen import listen_to_channels, process_notifications, listen
 from pgpubsub.models import Notification
 from pgpubsub.notify import process_stored_notifications
-from pgpubsub.tests.channels import AuthorTriggerChannel, MediaTriggerChannel
+from pgpubsub.tests.channels import (
+    AuthorTriggerChannel,
+    MediaTriggerChannel,
+    PostTriggerChannel,
+)
 from pgpubsub.tests.listeners import post_reads_per_date_cache, scan_media
 from pgpubsub.tests.models import Author, Media, Post
 
@@ -59,10 +64,33 @@ def test_deserialize_3():
 
     assert {
         'arg1': datetime.date(2021, 1, 1),
-        'arg2': {datetime.date(2021, 1, 7): True,
-                 datetime.date(2021, 1, 17): False},
+        'arg2': {datetime.date(2021, 1, 7): True, datetime.date(2021, 1, 17): False},
         'arg3': {'chosen_date': datetime.datetime(2021, 1, 1, 9, 30)},
     } == deserialized
+
+
+def test_deserialize_trigger_channel():
+    @dataclass
+    class MyChannel(TriggerChannel):
+        model: Post
+
+    some_datetime = datetime.datetime.utcnow()
+    post = Post(content='some-content', date=some_datetime)
+    deserialized = MyChannel.deserialize(
+        json.dumps(
+            {
+                'app': 'tests',
+                'model': 'Post',
+                'old': None,
+                'new': {'content': 'some-content', 'date': some_datetime.isoformat()},
+            }
+        )
+    )
+    assert deserialized['new'].date == some_datetime
+    assert deserialized['new'].content == post.content
+    assert deserialized['new'].id == post.id
+    assert deserialized['new'].rating == post.rating
+    assert deserialized['new'].author == post.author
 
 
 def _deserialize(channel_cls, **kwargs):
