@@ -207,6 +207,18 @@ def test_author_bulk_insert_notify(pg_connection):
 
 
 @pytest.mark.django_db(transaction=True)
+def test_post_create(pg_connection):
+    with atomic():
+        author = Author.objects.create(name='Billy')
+        post = Post.objects.create(
+            author=author,
+            content='This is your second post',
+            date=datetime.date.today(),
+        )
+        post
+
+
+@pytest.mark.django_db(transaction=True)
 def test_process_stored_notifications(pg_connection):
     Author.objects.create(name='Billy')
     Author.objects.create(name='Billy2')

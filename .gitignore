@@ -149,6 +149,9 @@ dmypy.json
 .AppleDouble
 .LSOverride
 
+Dockerfile.dev
+.env.dev
+
 # Icon must end with two \r
 Icon
 
