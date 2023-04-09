@@ -26,8 +26,8 @@ Highlights
 - **Minimal Operational Infrastructure**: If you're already running a Django application
   on top of a Postgres database, the installation of this library is the sum total
   of the operational work required to implement a framework for a distributed
-  message processing framework. No additional servers or server configuration
-  is required.
+  message processing framework. No additional frameworks or technologies
+  are required.
 
 - **Integration with Postgres Triggers (via django-pgtrigger)**:
   To quote the [official](https://www.postgresql.org/docs/current/sql-notify.html)
@@ -86,7 +86,7 @@ Limitations
   pgpubsub can easily be configured so that we can replay "lost" messages, but this comes at the
   performance penalty of inserting a row into a table before sending each notification. This is the same
   penalty we must pay if we wish to have concurrent processes listening to the same channel without
-  duplicate notiifcation processing, as explained in the **Exactly-once notification processing** section above.
+  duplicate notifcation processing, as explained in the **Exactly-once notification processing** section above.
 
 
 Alternatives
