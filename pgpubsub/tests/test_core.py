@@ -69,6 +69,7 @@ def test_deserialize_3():
     } == deserialized
 
 
+@pytest.mark.django_db(transaction=True)
 def test_deserialize_trigger_channel():
     @dataclass
     class MyChannel(TriggerChannel):
@@ -76,6 +77,8 @@ def test_deserialize_trigger_channel():
 
     some_datetime = datetime.datetime.utcnow()
     post = Post(content='some-content', date=some_datetime)
+    author = Author.objects.create(name='Billy')
+
     deserialized = MyChannel.deserialize(
         json.dumps(
             {

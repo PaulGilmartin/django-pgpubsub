@@ -9,6 +9,7 @@ from pydoc import locate
 from typing import Callable, Dict, Union, List
 
 from django.apps import apps
+from django.core import serializers
 from django.db import models
 from django.db.models import fields
 
@@ -173,6 +174,12 @@ class TriggerChannel(BaseChannel):
 
     @classmethod
     def deserialize(cls, payload: Union[Dict, str]):
+        payload_dict = super().deserialize(payload)
+        new = payload_dict['new']
+        data = [{'fields': new, 'pk': '', 'model': payload_dict['model']}]
+        objs = serializers.deserialize('json', json.dumps(data), ignorenonexistent=True)
+        for obj in objs:
+            obj
         payload = super().deserialize(payload)
         trigger_payload = TriggerPayload(payload)
         return {'old': trigger_payload.old, 'new': trigger_payload.new}
