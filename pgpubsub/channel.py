@@ -175,14 +175,32 @@ class TriggerChannel(BaseChannel):
     @classmethod
     def deserialize(cls, payload: Union[Dict, str]):
         payload_dict = super().deserialize(payload)
-        new = payload_dict['new']
-        data = [{'fields': new, 'pk': '', 'model': payload_dict['model']}]
-        objs = serializers.deserialize('json', json.dumps(data), ignorenonexistent=True)
+        model = f'{payload_dict["app"]}.{payload_dict["model"]}'
+
+        model_data = []
+        if payload_dict['old'] is not None:
+            model_data.append(
+                {'fields': payload_dict['old'], 'pk': 1, 'model': model},
+            )
+        if payload_dict['new'] is not None:
+            model_data.append(
+                {'fields': payload_dict['new'], 'pk': 1, 'model': model},
+            )
+
+        objs = serializers.deserialize(
+            'json',
+            json.dumps(model_data),
+        )
+
+        result = {}
         for obj in objs:
-            obj
-        payload = super().deserialize(payload)
-        trigger_payload = TriggerPayload(payload)
-        return {'old': trigger_payload.old, 'new': trigger_payload.new}
+            if payload_dict['old'] is not None:
+                result['old'] = obj.object
+                payload_dict.pop('old')
+            elif payload_dict['new'] is not None:
+                result['new'] = obj.object
+                payload_dict.pop('new')
+        return result
 
 
 def locate_channel(channel):
