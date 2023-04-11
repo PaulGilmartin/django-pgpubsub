@@ -15,11 +15,18 @@ class Media(models.Model):
 
 
 class Author(models.Model):
-    user = models.ForeignKey(User, on_delete=models.PROTECT, null=True)
+    user = models.ForeignKey(
+        User, on_delete=models.PROTECT, null=True)
     name = models.TextField()
     age = models.IntegerField(null=True)
     active = models.BooleanField(default=True)
-    profile_picture = models.ForeignKey(Media, null=True, on_delete=models.PROTECT)
+    profile_picture = models.ForeignKey(
+        Media,
+        null=True,
+        on_delete=models.PROTECT,
+        db_column='picture',
+    )
+    alternative_name = models.TextField(db_column='other', null=True)
 
 
 class Post(models.Model):

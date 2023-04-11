@@ -1,21 +1,16 @@
-from dataclasses import dataclass
 import datetime
-import json
-from typing import Dict, List, Set, Tuple
 
 from django.db.transaction import atomic
 import pytest
 
-from pgpubsub.channel import Channel, TriggerChannel
 from pgpubsub.listen import listen_to_channels, process_notifications, listen
 from pgpubsub.models import Notification
 from pgpubsub.notify import process_stored_notifications
 from pgpubsub.tests.channels import (
     AuthorTriggerChannel,
     MediaTriggerChannel,
-    PostTriggerChannel,
 )
-from pgpubsub.tests.listeners import post_reads_per_date_cache, scan_media
+from pgpubsub.tests.listeners import post_reads_per_date_cache
 from pgpubsub.tests.models import Author, Media, Post
 
 
@@ -105,18 +100,6 @@ def test_author_bulk_insert_notify(pg_connection):
     assert 2 == Post.objects.count()
     post_authors = Post.objects.values_list('author_id', flat=True)
     assert [author.pk for author in authors] == list(post_authors)
-
-
-@pytest.mark.django_db(transaction=True)
-def test_post_create(pg_connection):
-    with atomic():
-        author = Author.objects.create(name='Billy')
-        post = Post.objects.create(
-            author=author,
-            content='This is your second post',
-            date=datetime.date.today(),
-        )
-        post
 
 
 @pytest.mark.django_db(transaction=True)

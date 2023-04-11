@@ -46,12 +46,12 @@ def create_first_post_for_author(old: Author, new: Author):
     )
 
 
-# @pgpubsub.post_delete_listener(PostTriggerChannel)
-# def email_author(old: Post, new: Post):
-#     author = Author.objects.get(pk=old.author_id)
-#     print(f'Emailing {author.name} to inform then post '
-#           f'{old.pk} has been deleted.')
-#     email(author)
+@pgpubsub.post_delete_listener(PostTriggerChannel)
+def email_author(old: Post, new: Post):
+    author = Author.objects.get(pk=old.author_id)
+    print(f'Emailing {author.name} to inform then post '
+          f'{old.pk} has been deleted.')
+    email(author)
 
 
 def email(author: Author):
@@ -64,9 +64,3 @@ def scan_media(old: Media, new: Media):
         print(f'Perform virus scan on the new media {new}.')
     else:
         print(f'Media updated; scan {new} all over again.')
-
-
-@atomic
-@pgpubsub.post_insert_listener(PostTriggerChannel)
-def edit_post_listener(old: Post, new: Post):
-    new

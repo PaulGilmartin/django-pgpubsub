@@ -11,7 +11,6 @@ from typing import Callable, Dict, Union, List
 from django.apps import apps
 from django.core import serializers
 from django.db import models
-from django.db.models import fields
 
 
 registry = defaultdict(list)
@@ -135,36 +134,6 @@ class Channel(BaseChannel):
             return arg_type(arg)
 
 
-class TriggerPayload:
-    def __init__(self, payload: Dict):
-        self._json_payload = payload
-        self._model = apps.get_model(
-            app_label=self._json_payload['app'],
-            model_name=self._json_payload['model'],
-        )
-        self._old_row_data = self._json_payload['old']
-        self._new_row_data = self._json_payload['new']
-
-    @property
-    def old(self):
-        if self._old_row_data:
-            return self._entity_from_json(self._model, self._old_row_data)
-
-    @property
-    def new(self):
-        if self._new_row_data:
-            return self._entity_from_json(self._model, self._new_row_data)
-
-    def _entity_from_json(self, model, model_payload):
-        data = {}
-        for k, v in model_payload.items():
-            if isinstance(model._meta.get_field(k), fields.DateTimeField):
-                data[k] = datetime.datetime.fromisoformat(v)
-            else:
-                data[k] = v
-        return model(**data)
-
-
 @dataclass
 class TriggerChannel(BaseChannel):
 
@@ -175,32 +144,76 @@ class TriggerChannel(BaseChannel):
     @classmethod
     def deserialize(cls, payload: Union[Dict, str]):
         payload_dict = super().deserialize(payload)
-        model = f'{payload_dict["app"]}.{payload_dict["model"]}'
+        old_model_data = cls._build_model_serializer_data(
+            payload_dict, state='old')
+        new_model_data = cls._build_model_serializer_data(
+            payload_dict, state='new')
 
-        model_data = []
-        if payload_dict['old'] is not None:
-            model_data.append(
-                {'fields': payload_dict['old'], 'pk': 1, 'model': model},
-            )
-        if payload_dict['new'] is not None:
-            model_data.append(
-                {'fields': payload_dict['new'], 'pk': 1, 'model': model},
-            )
-
-        objs = serializers.deserialize(
+        old_deserialized_objects = serializers.deserialize(
             'json',
-            json.dumps(model_data),
+            json.dumps(old_model_data),
+            ignorenonexistent=True,
+        )
+        new_deserialized_objects = serializers.deserialize(
+            'json',
+            json.dumps(new_model_data),
+            ignorenonexistent=True,
         )
 
-        result = {}
-        for obj in objs:
-            if payload_dict['old'] is not None:
-                result['old'] = obj.object
-                payload_dict.pop('old')
-            elif payload_dict['new'] is not None:
-                result['new'] = obj.object
-                payload_dict.pop('new')
-        return result
+        old = next(old_deserialized_objects, None)
+        if old is not None:
+            old = old.object
+        new = next(new_deserialized_objects, None)
+        if new is not None:
+            new = new.object
+        return {'old': old, 'new': new}
+
+    @classmethod
+    def _build_model_serializer_data(cls, payload: Dict, state: str):
+        """Reformat serialized data into shape as expected
+        by the Django model deserializer.
+        """
+        app = payload['app']
+        model_name = payload['model']
+        model_cls = apps.get_model(
+            app_label=payload['app'],
+            model_name=payload['model'],
+        )
+        fields = {
+            field.name: field for field in model_cls._meta.fields
+        }
+        db_fields = {
+            field.db_column: field for field in model_cls._meta.fields
+        }
+
+        original_state = payload[state]
+        new_state = {}
+        model_data = []
+        if payload[state] is not None:
+            for field in list(original_state):
+                # Triggers serialize the notification payload with
+                # respect to how the model fields look as columns
+                # in the database. We therefore need to take
+                # care to map xxx_id named columns to the corresponding
+                # xxx model field and also to account for model fields
+                # with alternative database column names as declared
+                # by the db_column attribute.
+                value = original_state.pop(field)
+                if field.endswith('_id'):
+                    field = field.rsplit('_id')[0]
+                if field in fields:
+                    new_state[field] = value
+                elif field in db_fields:
+                    field = db_fields[field].name
+                    new_state[field] = value
+
+            model_data.append(
+                {'fields': new_state,
+                 'id': new_state['id'],
+                 'model': f'{app}.{model_name}',
+                 },
+            )
+        return model_data
 
 
 def locate_channel(channel):
