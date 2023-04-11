@@ -76,6 +76,9 @@ all trigger-based notifications:
 
 Here the ``old`` and ``new`` parameters are the (unsaved) versions of what the
 trigger invoking instance looked like before and after the trigger was invoked.
+These objects are built by passing in the trigger notification payload through
+Django's model `deserializers <https://docs.djangoproject.com/en/4.1/topics/serialization/>`__.
+
 In this example, ``old`` would refer to the state of our ``Author`` object
 pre-creation (and would hence be ``None``) and ``new`` would refer to a copy of
 the newly created ``Author`` instance. This payload is inspired by the ``OLD``
