@@ -5,6 +5,7 @@ from decimal import Decimal
 
 import pytest
 from django.contrib.auth.models import User
+from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
 
 from pgpubsub import TriggerChannel
@@ -37,9 +38,10 @@ def test_deserialize_post_trigger_channel():
                     'id': post.pk,
                     # See https://github.com/Opus10/django-pgpubsub/issues/29
                     'old_field': 'foo',
-                    'rating': 1.1,
+                    'rating': Decimal("1.1"),
                 },
-            }
+            },
+            cls=DjangoJSONEncoder,
         )
     )
     assert deserialized['new'].date == some_datetime
