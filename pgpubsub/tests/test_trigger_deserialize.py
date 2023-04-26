@@ -1,6 +1,7 @@
 import datetime
 import json
 from dataclasses import dataclass
+from decimal import Decimal
 
 import pytest
 from django.contrib.auth.models import User
@@ -22,7 +23,7 @@ def test_deserialize_post_trigger_channel():
         model: Post
 
     some_datetime = datetime.datetime.utcnow()
-    post = Post(content='some-content', date=some_datetime, pk=1)
+    post = Post(content='some-content', date=some_datetime, pk=1, rating=Decimal("1.1"))
 
     deserialized = MyChannel.deserialize(
         json.dumps(
@@ -36,6 +37,7 @@ def test_deserialize_post_trigger_channel():
                     'id': post.pk,
                     # See https://github.com/Opus10/django-pgpubsub/issues/29
                     'old_field': 'foo',
+                    'rating': 1.1,
                 },
             }
         )

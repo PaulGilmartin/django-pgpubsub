@@ -2,6 +2,7 @@ import hashlib
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
+from decimal import Decimal
 import datetime
 import inspect
 import json
@@ -10,6 +11,7 @@ from typing import Callable, Dict, Union, List
 
 from django.apps import apps
 from django.core import serializers
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 
 
@@ -50,14 +52,14 @@ class BaseChannel:
     @abstractmethod
     def deserialize(cls, payload: Union[Dict, str]):
         if isinstance(payload, str):
-            payload = json.loads(payload)
+            payload = json.loads(payload, parse_float=Decimal)
         return payload
 
     @classmethod
     def build_from_payload(
-            cls,
-            notification_payload: Union[Dict, str],
-            callbacks: List[Callable],
+        cls,
+        notification_payload: Union[Dict, str],
+        callbacks: List[Callable],
     ):
         deserialized = cls.deserialize(notification_payload)
         channel = cls(**deserialized)
@@ -118,6 +120,7 @@ class Channel(BaseChannel):
         return json.dumps(
             {'kwargs': serialized_kwargs},
             default=self._date_serial,
+            cls=DjangoJSONEncoder,
         )
 
     @staticmethod
@@ -144,19 +147,17 @@ class TriggerChannel(BaseChannel):
     @classmethod
     def deserialize(cls, payload: Union[Dict, str]):
         payload_dict = super().deserialize(payload)
-        old_model_data = cls._build_model_serializer_data(
-            payload_dict, state='old')
-        new_model_data = cls._build_model_serializer_data(
-            payload_dict, state='new')
+        old_model_data = cls._build_model_serializer_data(payload_dict, state='old')
+        new_model_data = cls._build_model_serializer_data(payload_dict, state='new')
 
         old_deserialized_objects = serializers.deserialize(
             'json',
-            json.dumps(old_model_data),
+            json.dumps(old_model_data, cls=DjangoJSONEncoder),
             ignorenonexistent=True,
         )
         new_deserialized_objects = serializers.deserialize(
             'json',
-            json.dumps(new_model_data),
+            json.dumps(new_model_data, cls=DjangoJSONEncoder),
             ignorenonexistent=True,
         )
 
