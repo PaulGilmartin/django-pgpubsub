@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+django-pgpubsub = "*"
+django = "==4.1"
+psycopg2-binary = "2.9"
+django-pgtrigger = "*"
+pipfile = "*"
+pytest = "*"
+pytest-cov = "3.0.0"
+pytest-dotenv = "0.5.2"
+pytest-django = "4.5.2"
+pytest-mock = "3.7.0"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"
