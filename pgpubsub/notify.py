@@ -50,7 +50,7 @@ def process_stored_notifications(channels=None):
             payload = 'null'
             print(
                 f'Notifying channel {channel_cls.name()} to recover '
-                f'previously stored notifications.')
+                f'previously stored notifications.\n')
             cursor.execute(
                 f"select pg_notify('{channel_cls.listen_safe_name()}', '{payload}');")
 
