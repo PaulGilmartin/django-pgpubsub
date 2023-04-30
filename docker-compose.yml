@@ -6,7 +6,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    command: python /django-pgpubsub/manage.py listen
+    command: python /django-pgpubsub/manage.py runserver
     volumes:
       - .:/django-pgpubsub
     ports:

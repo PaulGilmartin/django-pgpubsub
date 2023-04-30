@@ -16,19 +16,22 @@ from pgpubsub.channel import (
 from pgpubsub.models import Notification
 
 
+POLL = True
+
+
 def listen(
-    channels: Union[List[BaseChannel], List[str]]=None,
-    recover: bool=False,
-    poll_count: Union[None, int]=None,
+    channels: Union[List[BaseChannel], List[str]] = None,
+    recover: bool = False,
 ):
     multiprocessing.set_start_method('fork', force=True)
     pg_connection = listen_to_channels(channels)
+
     if recover:
         process_stored_notifications(channels)
         process_notifications(pg_connection)
-    poll_count = poll_count or float('inf')
-    print('Listening for notifications...')
-    while poll_count:
+
+    print('Listening for notifications... \n')
+    while POLL:
         if select.select([pg_connection], [], [], 1) == ([], [], []):
             pass
         else:
@@ -38,14 +41,12 @@ def listen(
                 print(f'Encountered exception {e}')
                 print('Restarting process')
                 connection.close()
-                process = multiprocessing.Process(
-                    target=listen, args=(channels,))
+                process = multiprocessing.Process(target=listen, args=(channels,))
                 process.start()
                 raise
-        poll_count -= 1
 
 
-def listen_to_channels(channels: Union[List[BaseChannel], List[str]]=None):
+def listen_to_channels(channels: Union[List[BaseChannel], List[str]] = None):
     if channels is None:
         channels = registry
     else:
@@ -59,7 +60,7 @@ def listen_to_channels(channels: Union[List[BaseChannel], List[str]]=None):
         raise ChannelNotFound()
     cursor = connection.cursor()
     for channel in channels:
-        print(f'Listening on {channel.name()}')
+        print(f'Listening on {channel.name()}\n')
         cursor.execute(f'LISTEN {channel.listen_safe_name()};')
     return connection.connection
 
@@ -86,8 +87,7 @@ def process_notifications(pg_connection):
 class NotificationProcessor:
     def __init__(self, notification: Notify, pg_connection):
         self.notification = notification
-        self.channel_cls, self.callbacks = Channel.get(
-            notification.channel)
+        self.channel_cls, self.callbacks = Channel.get(notification.channel)
         self.pg_connection = pg_connection
         self.validate()
 
@@ -96,15 +96,13 @@ class NotificationProcessor:
             raise InvalidNotificationProcessor
 
     def process(self):
-        print(
-            f'Processing notification for {self.channel_cls.name()}')
+        print(f'Processing notification for {self.channel_cls.name()}\n')
         return self._execute()
 
     def _execute(self):
         channel = self.channel_cls.build_from_payload(
             self.notification.payload, self.callbacks)
         channel.execute_callbacks()
-        print('\n')
         self.pg_connection.poll()
 
 
@@ -132,10 +130,7 @@ class LockableNotificationProcessor(NotificationProcessor):
             print(f'Obtained lock on {notification}')
             self.notification = notification
             self._execute()
-
-    def _execute(self):
-        super()._execute()
-        self.notification.delete()
+            self.notification.delete()
 
 
 class NotificationRecoveryProcessor(LockableNotificationProcessor):
@@ -145,15 +140,22 @@ class NotificationRecoveryProcessor(LockableNotificationProcessor):
             raise InvalidNotificationProcessor
 
     def process(self):
-        print(f'Processing all notifications for '
-              f'channel {self.channel_cls.name()}')
+        print(f'Processing all notifications for channel {self.channel_cls.name()} \n')
         notifications = (
             Notification.objects.select_for_update(
                 skip_locked=True).filter(channel=self.notification.channel)
         )
+        print(f'Found notifications: {notifications}')
         for notification in notifications:
             self.notification = notification
-            self._execute()
+            try:
+                with transaction.atomic():
+                    self._execute()
+            except Exception as e:
+                print(f'Encountered {e} exception when processing notification {notification}')
+            else:
+                print(f'Successfully processed notification {notification}')
+                self.notification.delete()
 
 
 class InvalidNotificationProcessor(Exception):
