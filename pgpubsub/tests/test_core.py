@@ -1,5 +1,8 @@
 import datetime
+import json
+from unittest.mock import patch
 
+from django.contrib.auth.models import User
 from django.db.transaction import atomic
 import pytest
 
@@ -136,29 +139,44 @@ def test_recover_notifications(pg_connection):
     pg_connection.notifies = []
     pg_connection.poll()
     assert 0 == len(pg_connection.notifies)
-    listen(recover=True, poll_count=1)
+    with patch('pgpubsub.listen.POLL', False):
+        listen(recover=True)
     pg_connection.poll()
     assert 0 == Notification.objects.count()
     assert 2 == Post.objects.count()
 
 
 @pytest.mark.django_db(transaction=True)
-def test_do_not_recover_notifications(pg_connection):
-    Author.objects.create(name='Billy')
+def test_recover_notifications_after_exception(pg_connection):
+    user = User.objects.create(username='Billy')
+    author = Author.objects.create(name='Billy', user=user)
+
+    # Create a Notification with a payload which will produce
+    # an exception
+    notification = Notification.objects.last()
+    payload = json.loads(notification.payload)
+    payload['new']['user_id'] = int(author.user_id) + 1
+    notification.payload = str(payload)
+    notification.pk = None
+    notification.save()
+
     Author.objects.create(name='Billy2')
+
     pg_connection.poll()
     assert 2 == len(pg_connection.notifies)
-    assert 2 == Notification.objects.count()
+
+    assert 3 == Notification.objects.count()
     assert 0 == Post.objects.count()
-    # Simulate when the listener fails to
-    # receive notifications
+
+    # Simulate when the listener fails to receive notifications
     pg_connection.notifies = []
     pg_connection.poll()
     assert 0 == len(pg_connection.notifies)
-    listen(recover=False, poll_count=1)
+    with patch('pgpubsub.listen.POLL', False):
+        listen(recover=True)
     pg_connection.poll()
-    assert 2 == Notification.objects.count()
-    assert 0 == Post.objects.count()
+    assert 1 == Notification.objects.count()
+    assert 2 == Post.objects.count()
 
 
 @pytest.mark.django_db(transaction=True)
