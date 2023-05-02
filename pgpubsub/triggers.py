@@ -27,13 +27,13 @@ class Notify(pgtrigger.Trigger):
                 'app', '{model._meta.app_label}',
                 'model', '{model.__name__}',
                 'old', row_to_json(OLD),
-                'new', row_to_json(NEW)
+                'new', row_to_json(NEW),
+                'db_version', (select max(id) from django_migrations)
               );
         '''
 
 
 class LockableNotify(Notify):
-
     def _pre_notify(self):
         return f'''
             INSERT INTO pgpubsub_notification (channel, payload)

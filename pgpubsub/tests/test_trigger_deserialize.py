@@ -6,6 +6,7 @@ from decimal import Decimal
 import pytest
 from django.contrib.auth.models import User
 from django.core.serializers.json import DjangoJSONEncoder
+from django.db.migrations.recorder import MigrationRecorder
 from django.utils import timezone
 
 from pgpubsub import TriggerChannel
@@ -18,10 +19,13 @@ from pgpubsub.tests.channels import (
 from pgpubsub.tests.models import Post, Author, Media
 
 
-def test_deserialize_post_trigger_channel():
+@pytest.mark.django_db
+def test_deserialize_post_trigger_channel_of_current_version():
     @dataclass
     class MyChannel(TriggerChannel):
         model: Post
+
+    last_migration = MigrationRecorder.Migration.objects.latest('id')
 
     some_datetime = datetime.datetime.utcnow()
     post = Post(content='some-content', date=some_datetime, pk=1, rating=Decimal("1.1"))
@@ -40,6 +44,7 @@ def test_deserialize_post_trigger_channel():
                     'old_field': 'foo',
                     'rating': Decimal("1.1"),
                 },
+                'db_version': last_migration.id,
             },
             cls=DjangoJSONEncoder,
         )
@@ -48,6 +53,75 @@ def test_deserialize_post_trigger_channel():
     assert deserialized['new'].content == post.content
     assert deserialized['new'].rating == post.rating
     assert deserialized['new'].author == post.author
+
+
+@pytest.mark.django_db
+def test_deserialize_post_trigger_channel_of_outdated_version():
+    @dataclass
+    class MyChannel(TriggerChannel):
+        model: Post
+
+    not_last_migration = MigrationRecorder.Migration.objects.all().order_by('-id')[1]
+
+    latest_post = Post.objects.create(
+        content='some-content', date=datetime.datetime.utcnow(), rating=Decimal("1.1")
+    )
+
+    deserialized = MyChannel.deserialize(
+        json.dumps(
+            {
+                'app': 'tests',
+                'model': 'Post',
+                'old': None,
+                'new': {
+                    'content': 'outdated-content',
+                    'id': latest_post.pk,
+                    'old_field': 'foo',
+                    'rating': Decimal("1.2"),
+                },
+                'db_version': not_last_migration.id,
+            },
+            cls=DjangoJSONEncoder,
+        )
+    )
+    assert deserialized['new'].date == latest_post.date
+    assert deserialized['new'].content == latest_post.content
+    assert deserialized['new'].rating == latest_post.rating
+    assert deserialized['new'].author == latest_post.author
+
+
+@pytest.mark.django_db
+def test_deserialize_post_trigger_channel_of_outdated_version_when_obj_is_deleted():
+    @dataclass
+    class MyChannel(TriggerChannel):
+        model: Post
+
+    not_last_migration = MigrationRecorder.Migration.objects.all().order_by('-id')[1]
+
+    latest_post = Post.objects.create(
+        content='some-content', date=datetime.datetime.utcnow(), rating=Decimal("1.1")
+    )
+    latest_post.delete()
+
+    deserialized = MyChannel.deserialize(
+        json.dumps(
+            {
+                'app': 'tests',
+                'model': 'Post',
+                'old': None,
+                'new': {
+                    'content': 'outdated-content',
+                    'id': latest_post.pk,
+                    'old_field': 'foo',
+                    'rating': Decimal("1.2"),
+                },
+                'db_version': not_last_migration.id,
+            },
+            cls=DjangoJSONEncoder,
+        )
+    )
+    assert deserialized['old'] is None
+    assert deserialized['new'] is None
 
 
 @pytest.mark.django_db(transaction=True)

@@ -7,12 +7,13 @@ import datetime
 import inspect
 import json
 from pydoc import locate
-from typing import Callable, Dict, Union, List
+from typing import Any, Callable, Dict, Union, List, Type
 
 from django.apps import apps
 from django.core import serializers
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
+from django.db.migrations.recorder import MigrationRecorder
 
 
 registry = defaultdict(list)
@@ -147,50 +148,59 @@ class TriggerChannel(BaseChannel):
     @classmethod
     def deserialize(cls, payload: Union[Dict, str]):
         payload_dict = super().deserialize(payload)
-        old_model_data = cls._build_model_serializer_data(payload_dict, state='old')
-        new_model_data = cls._build_model_serializer_data(payload_dict, state='new')
-
-        old_deserialized_objects = serializers.deserialize(
-            'json',
-            json.dumps(old_model_data, cls=DjangoJSONEncoder),
-            ignorenonexistent=True,
-        )
-        new_deserialized_objects = serializers.deserialize(
-            'json',
-            json.dumps(new_model_data, cls=DjangoJSONEncoder),
-            ignorenonexistent=True,
-        )
-
-        old = next(old_deserialized_objects, None)
-        if old is not None:
-            old = old.object
-        new = next(new_deserialized_objects, None)
-        if new is not None:
-            new = new.object
+        old = cls._deserialize_from_state(payload_dict, state='old')
+        new = cls._deserialize_from_state(payload_dict, state='new')
         return {'old': old, 'new': new}
 
     @classmethod
-    def _build_model_serializer_data(cls, payload: Dict, state: str):
-        """Reformat serialized data into shape as expected
-        by the Django model deserializer.
-        """
+    def _is_up_to_date(cls, app: str, db_version_id: int) -> bool:
+        newer_migration_exists = MigrationRecorder.Migration.objects.filter(
+            app=app, id__gt=db_version_id
+        ).exists()
+        return not newer_migration_exists
+
+    @classmethod
+    def _deserialize_from_state(cls, payload: Dict, state: str) -> Any:
         app = payload['app']
         model_name = payload['model']
         model_cls = apps.get_model(
             app_label=payload['app'],
             model_name=payload['model'],
         )
-        fields = {
-            field.name: field for field in model_cls._meta.fields
-        }
-        db_fields = {
-            field.db_column: field for field in model_cls._meta.fields
-        }
+        if cls._is_up_to_date(app, payload["db_version"]):
+            model_data = cls._build_model_serializer_data(model_cls, payload[state])
 
-        original_state = payload[state]
+            deserialized_objects = serializers.deserialize(
+                'json',
+                json.dumps(model_data, cls=DjangoJSONEncoder),
+                ignorenonexistent=True,
+            )
+
+            obj = next(deserialized_objects, None)
+            if obj is not None:
+                obj = obj.object
+        else:
+            if payload[state]:
+                try:
+                    obj = model_cls.objects.get(pk=payload[state][model_cls._meta.pk.name])
+                except model_cls.DoesNotExist:
+                    obj = None
+            else:
+                obj = None
+
+        return obj
+
+    @classmethod
+    def _build_model_serializer_data(cls, model_cls: Type[Any], original_state: Dict) -> List[Any]:
+        """Reformat serialized data into shape as expected
+        by the Django model deserializer.
+        """
+        fields = {field.name: field for field in model_cls._meta.fields}
+        db_fields = {field.db_column: field for field in model_cls._meta.fields}
+
         new_state = {}
         model_data = []
-        if payload[state] is not None:
+        if original_state is not None:
             for field in list(original_state):
                 # Triggers serialize the notification payload with
                 # respect to how the model fields look as columns
@@ -209,10 +219,11 @@ class TriggerChannel(BaseChannel):
                     new_state[field] = value
 
             model_data.append(
-                {'fields': new_state,
-                 'id': new_state['id'],
-                 'model': f'{app}.{model_name}',
-                 },
+                {
+                    'fields': new_state,
+                    'id': new_state['id'],
+                    'model': f'{model_cls._meta.app_label}.{model_cls.__name__}',
+                },
             )
         return model_data
 
