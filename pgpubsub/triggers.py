@@ -33,9 +33,8 @@ class Notify(pgtrigger.Trigger):
 
 
 class LockableNotify(Notify):
-
     def _pre_notify(self):
         return f'''
-            INSERT INTO pgpubsub_notification (channel, payload)
-            VALUES ('{self.name}', to_json(payload::text));
+            INSERT INTO pgpubsub_notification (channel, payload, created_at)
+            VALUES ('{self.name}', to_json(payload::text), NOW());
         '''

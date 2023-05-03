@@ -183,7 +183,17 @@ def test_recover_notifications_after_exception(pg_connection):
 def test_media_insert_notify(pg_connection):
     Media.objects.create(name='avatar.jpg', content_type='image/png', size=15000)
     assert 1 == len(pg_connection.notifies)
-    stored_notification = Notification.from_channel(
-        channel=MediaTriggerChannel).get()
+    stored_notification = Notification.from_channel(channel=MediaTriggerChannel).get()
     assert 'old' in stored_notification.payload
     assert 'new' in stored_notification.payload
+
+
+@pytest.mark.django_db(transaction=True)
+def test_persistent_notification_has_a_creation_timestamp(pg_connection):
+    before_save_datetime = datetime.datetime.now()
+    Media.objects.create(name='avatar.jpg', content_type='image/png', size=15000)
+    assert 1 == len(pg_connection.notifies)
+    listened_notification = Notification.from_channel(channel=MediaTriggerChannel).get()
+    assert listened_notification.created_at >= before_save_datetime
+    persisted_notification = Notification.objects.all()[0]
+    assert persisted_notification.created_at >= before_save_datetime
