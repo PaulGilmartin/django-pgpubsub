@@ -154,6 +154,7 @@ class TriggerChannel(BaseChannel):
 
     @classmethod
     def _is_up_to_date(cls, app: str, db_version_id: int) -> bool:
+        """Check if the db version id from django migrations is the latest for the given app"""
         newer_migration_exists = MigrationRecorder.Migration.objects.filter(
             app=app, id__gt=db_version_id
         ).exists()
