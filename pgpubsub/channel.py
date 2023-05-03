@@ -167,7 +167,8 @@ class TriggerChannel(BaseChannel):
             app_label=payload['app'],
             model_name=payload['model'],
         )
-        if cls._is_up_to_date(app, payload["db_version"]):
+        db_version = payload.get("db_version", None)
+        if db_version is None or cls._is_up_to_date(app, db_version):
             model_data = cls._build_model_serializer_data(model_cls, payload[state])
 
             deserialized_objects = serializers.deserialize(
