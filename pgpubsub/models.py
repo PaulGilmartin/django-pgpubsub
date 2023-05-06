@@ -19,7 +19,7 @@ class Notification(models.Model):
     # compatible. From the version this change is release the field is effectively non
     # nullable as in it always gets a value.
     # After some time the field should be made non nullable here.
-    created_at = models.DateTimeField(null=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
 
     def __repr__(self):
         return (

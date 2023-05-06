@@ -13,6 +13,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='notification',
             name='created_at',
-            field=models.DateTimeField(null=True),
+            field=models.DateTimeField(auto_now_add=True, null=True),
         ),
     ]
