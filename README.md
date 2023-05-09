@@ -633,6 +633,43 @@ Note that this recovery option can be enabled whenever we use the `listen` manag
 by supplying it with the `--recover` option. This will tell the listening processes to replay
 any missed stored notifications automatically when it starts up.
 
+Notifications Processing Metrics export
+==============
+
+To facilitate the listener process monitoring some metrics can be exported via
+[opentelementry API](https://opentelemetry.io/).
+
+Do to that implement `MeterProviderFactory`. Here's the example of the console
+exporter:
+
+```python
+# some/path/mymeter.py
+
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import ConsoleMetricExporter, PeriodicExportingMetricReader
+
+from pgpubsub.metrics import MeterProviderFactory
+
+
+class TestMeterProviderFactory(MeterProviderFactory):
+    def get_meter_provider(self) -> MeterProvider:
+        exporter = ConsoleMetricExporter()
+        reader = PeriodicExportingMetricReader(
+            exporter,
+            export_interval_millis=5_000,
+        )
+        return MeterProvider(metric_readers=[reader])
+```
+
+Then specify that this factory should be used by ``pgpubsub`` to export
+metrics in django settings:
+
+```
+# package together with classname should be specified
+PGPUBSUB_METER_PROVIDER_FACTORY = "some.path.mymeter.TestMeterProviderFactory"
+# this allows to configure metrics prefix
+PGPUBSUB_METRIC_PREFIX = "myapp-metrics"
+```
 
 Live Demos
 ==========
