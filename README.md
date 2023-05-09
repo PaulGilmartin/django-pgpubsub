@@ -661,6 +661,8 @@ class TestMeterProviderFactory(MeterProviderFactory):
         return MeterProvider(metric_readers=[reader])
 ```
 
+You'll need to add `opentelemetry-sdk` package to you project.
+
 Then specify that this factory should be used by ``pgpubsub`` to export
 metrics in django settings:
 
