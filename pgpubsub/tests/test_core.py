@@ -3,6 +3,7 @@ import json
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
+from django.db import connection
 from django.db.transaction import atomic
 import pytest
 
@@ -188,10 +189,16 @@ def test_media_insert_notify(pg_connection):
     assert 'new' in stored_notification.payload
 
 
+@pytest.fixture
+def tx_start_time(django_db_setup):
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT now();")
+        return cursor.fetchone()[0]
+
+
 @pytest.mark.django_db(transaction=True)
-def test_persistent_notification_has_a_creation_timestamp(pg_connection):
-    before_save_datetime = datetime.datetime.now()
+def test_persistent_notification_has_a_creation_timestamp(pg_connection, tx_start_time):
     Media.objects.create(name='avatar.jpg', content_type='image/png', size=15000)
     assert 1 == len(pg_connection.notifies)
     stored_notification = Notification.from_channel(channel=MediaTriggerChannel).get()
-    assert stored_notification.created_at >= before_save_datetime
+    assert stored_notification.created_at >= tx_start_time
