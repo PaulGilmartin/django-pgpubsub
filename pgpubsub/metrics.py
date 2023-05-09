@@ -5,8 +5,6 @@ from django.db.models import Min
 from django.utils import timezone
 from opentelemetry import metrics
 
-from pgpubsub.models import Notification
-
 
 class MeterProviderFactory(Protocol):
     def get_meter_provider() -> metrics.MeterProvider:
@@ -14,10 +12,14 @@ class MeterProviderFactory(Protocol):
 
 
 def queue_length_callback(options: Any) -> Generator[metrics.Observation, None, None]:
+    from pgpubsub.models import Notification
+
     yield metrics.Observation(Notification.objects.all().count())
 
 
 def queue_processing_lag_callback(options: Any) -> Generator[metrics.Observation, None, None]:
+    from pgpubsub.models import Notification
+
     min_created_at = Notification.objects.aggregate(Min('created_at'))['created_at__min']
 
     if min_created_at is None:
