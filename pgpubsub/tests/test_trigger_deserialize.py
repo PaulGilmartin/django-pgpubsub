@@ -21,7 +21,7 @@ from pgpubsub.tests.models import Post, Author, Media
 
 @pytest.mark.django_db
 def test_deserialize_post_trigger_channel_of_current_version():
-    last_migration = MigrationRecorder.Migration.objects.latest('id')
+    last_migration = MigrationRecorder.Migration.objects.filter(app='tests').latest('id')
 
     some_datetime = datetime.datetime.utcnow()
     original_content = 'original-content'
@@ -58,7 +58,7 @@ def test_deserialize_post_trigger_channel_of_current_version():
 
 @pytest.mark.django_db
 def test_deserialize_post_trigger_channel_of_the_serialized_form_without_db_version():
-    last_migration = MigrationRecorder.Migration.objects.latest('id')
+    last_migration = MigrationRecorder.Migration.objects.filter(app='tests').latest('id')
 
     some_datetime = datetime.datetime.utcnow()
     original_content = 'original-content'
@@ -86,7 +86,7 @@ def test_deserialize_post_trigger_channel_of_the_serialized_form_without_db_vers
 
 @pytest.mark.django_db
 def test_deserialize_post_trigger_channel_of_outdated_version():
-    not_last_migration = MigrationRecorder.Migration.objects.all().order_by('-id')[1]
+    last_migration = MigrationRecorder.Migration.objects.filter(app='tests').latest('id')
 
     latest_post = Post.objects.create(
         content='some-content', date=datetime.datetime.utcnow()
@@ -103,7 +103,7 @@ def test_deserialize_post_trigger_channel_of_outdated_version():
                     'id': latest_post.pk,
                     'old_field': 'foo',
                 },
-                'db_version': not_last_migration.id,
+                'db_version': last_migration.id - 1,
             },
             cls=DjangoJSONEncoder,
         )
@@ -111,6 +111,34 @@ def test_deserialize_post_trigger_channel_of_outdated_version():
     assert deserialized['new'].date == latest_post.date
     assert deserialized['new'].content == latest_post.content
     assert deserialized['old'] is None
+
+@pytest.mark.django_db
+def test_deserialize_post_trigger_channel_of_outdated_version_after_the_migration_revert():
+    last_migration = MigrationRecorder.Migration.objects.filter(app='tests').latest('id')
+
+    latest_post = Post.objects.create(
+        content='some-content', date=datetime.datetime.utcnow()
+    )
+
+    deserialized = PostTriggerChannel.deserialize(
+        json.dumps(
+            {
+                'app': 'tests',
+                'model': 'Post',
+                'old': None,
+                'new': {
+                    'content': 'outdated-content',
+                    'id': latest_post.pk,
+                    'old_field': 'foo',
+                },
+                # simulate creation of this form by the version that was reverted
+                'db_version': last_migration.id + 1
+            },
+            cls=DjangoJSONEncoder,
+        )
+    )
+    assert deserialized['new'].date == latest_post.date
+    assert deserialized['new'].content == latest_post.content
 
 
 @pytest.mark.django_db
