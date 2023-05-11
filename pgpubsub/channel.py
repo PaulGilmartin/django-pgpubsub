@@ -79,7 +79,6 @@ class BaseChannel:
 
 @dataclass
 class Channel(BaseChannel):
-
     @classmethod
     def deserialize(cls, payload: Union[Dict, str]):
         payload = super().deserialize(payload)
@@ -168,7 +167,7 @@ class TriggerChannel(BaseChannel):
             app_label=payload['app'],
             model_name=payload['model'],
         )
-        db_version = payload.get("db_version", None)
+        db_version = payload.get('db_version', None)
         if db_version is None or cls._is_up_to_date(app, db_version):
             model_data = cls._build_model_serializer_data(model_cls, payload[state])
 

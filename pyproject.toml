@@ -84,3 +84,5 @@ addopts = "--reuse-db"
 testpaths = "pgpubsub/tests"
 norecursedirs = ".venv"
 DJANGO_SETTINGS_MODULE = "settings"
+filterwarnings = ["ignore::DeprecationWarning:django.http.request:",
+    "ignore::DeprecationWarning:django.utils.encoding:"]

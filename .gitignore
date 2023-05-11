@@ -319,6 +319,9 @@ fabric.properties
 Session.vim
 Sessionx.vim
 
+# exrc
+.exrc
+
 # Temporary
 .netrwhist
 *~
