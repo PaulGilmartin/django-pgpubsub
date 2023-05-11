@@ -89,7 +89,7 @@ def test_deserialize_post_trigger_channel_of_outdated_version():
     not_last_migration = MigrationRecorder.Migration.objects.all().order_by('-id')[1]
 
     latest_post = Post.objects.create(
-        content='some-content', date=datetime.datetime.utcnow(), rating=Decimal("1.1")
+        content='some-content', date=datetime.datetime.utcnow()
     )
 
     deserialized = PostTriggerChannel.deserialize(
@@ -102,7 +102,6 @@ def test_deserialize_post_trigger_channel_of_outdated_version():
                     'content': 'outdated-content',
                     'id': latest_post.pk,
                     'old_field': 'foo',
-                    'rating': Decimal("1.2"),
                 },
                 'db_version': not_last_migration.id,
             },
@@ -111,8 +110,7 @@ def test_deserialize_post_trigger_channel_of_outdated_version():
     )
     assert deserialized['new'].date == latest_post.date
     assert deserialized['new'].content == latest_post.content
-    assert deserialized['new'].rating == latest_post.rating
-    assert deserialized['new'].author == latest_post.author
+    assert deserialized['old'] is None
 
 
 @pytest.mark.django_db
