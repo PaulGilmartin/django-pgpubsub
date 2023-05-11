@@ -28,7 +28,7 @@ class Notify(pgtrigger.Trigger):
                 'model', '{model.__name__}',
                 'old', row_to_json(OLD),
                 'new', row_to_json(NEW),
-                'db_version', (select max(id) from django_migrations)
+                'db_version', (select max(id) from django_migrations where app = '{model._meta.app_label}')
               );
         '''
 
