@@ -64,6 +64,6 @@ def configure_monitoring():
         meter_provider = meter_provider_factory.get_meter_provider()
         metrics.set_meter_provider(meter_provider)
 
-        meter: mertric.Meter = metrics.get_meter(__name__)
+        meter: metrics.Meter = metrics.get_meter(__name__)
 
         _create_instruments(meter)

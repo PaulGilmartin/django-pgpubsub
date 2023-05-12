@@ -81,4 +81,4 @@ def test_queue_processing_lag_callback_returns_lag():
     sleep(0.05)
 
     observations = list(queue_processing_lag_callback(MagicMock()))
-    assert observations[0].value >= 10
+    assert observations[0].value >= 100
