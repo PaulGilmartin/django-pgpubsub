@@ -38,6 +38,7 @@ class Notification(models.Model):
                         FROM django_migrations
                         WHERE app = ((NEW.payload #>> '{}')::jsonb ->> 'app')
                     );
+                    NEW.created_at := NOW();
                     RETURN NEW;
                 """,
             )
