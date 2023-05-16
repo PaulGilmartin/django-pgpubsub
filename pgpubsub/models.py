@@ -8,6 +8,8 @@ except:
     from django.contrib.postgres.fields import JSONField
 
 from pgpubsub.channel import BaseChannel
+import pgtrigger
+
 
 MAX_POSTGRES_CHANNEL_LENGTH = 63
 
@@ -20,13 +22,32 @@ class Notification(models.Model):
     # nullable as in it always gets a value.
     # After some time the field should be made non nullable here.
     created_at = models.DateTimeField(auto_now_add=True, null=True)
+    db_version = models.IntegerField(null=True)
+
+    class Meta:
+        triggers = [
+            pgtrigger.Trigger(
+                name="pgpubsub_notification_set_db_version",
+                operation=pgtrigger.Insert | pgtrigger.Update,
+                when=pgtrigger.Before,
+                func="""
+                    NEW.db_version := (
+                        SELECT max(id)
+                        FROM django_migrations
+                        WHERE app = ((NEW.payload #>> '{}')::jsonb ->> 'app')
+                    );
+                    RETURN NEW;
+                """,
+            )
+        ]
 
     def __repr__(self):
         return (
             f'Notification('
             f'channel={self.channel},'
             f' payload={self.payload},'
-            f' created_at={self.created_at}'
+            f' created_at={self.created_at},'
+            f' db_version={self.db_version}'
             f')'
         )
 
