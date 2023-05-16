@@ -23,14 +23,14 @@ class Notification(models.Model):
     # After some time the field should be made non nullable here.
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     # This is a FK for the migration id but ForeignKey cannot be used as migrations
-    # is not a regural table in django, so FK is created manually
+    # is not a regular table in django, so FK is created manually.
     db_version = models.IntegerField(null=True)
 
     class Meta:
         triggers = [
             pgtrigger.Trigger(
                 name="pgpubsub_notification_set_db_version",
-                operation=pgtrigger.Insert | pgtrigger.Update,
+                operation=pgtrigger.Insert,
                 when=pgtrigger.Before,
                 func="""
                     NEW.db_version := (
