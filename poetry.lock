@@ -352,21 +352,6 @@ argon2 = ["argon2-cffi (>=19.1.0)"]
 bcrypt = ["bcrypt"]
 
 [[package]]
-name = "django-pgconnection"
-version = "1.0.2"
-description = "Route postgres connections and hook into cursor execution"
-category = "main"
-optional = false
-python-versions = ">=3.6.2,<4"
-files = [
-    {file = "django-pgconnection-1.0.2.tar.gz", hash = "sha256:1c012e789cd65bee1d514de6a4b3f90c888e599c3c2be195e7bb3627923bb7f3"},
-    {file = "django_pgconnection-1.0.2-py3-none-any.whl", hash = "sha256:51ea5943faaa4aa4a2f953586b925ecddec852b009c004ee0b5de93d5ae162f7"},
-]
-
-[package.dependencies]
-django = ">=2"
-
-[[package]]
 name = "django-pgtrigger"
 version = "4.6.0"
 description = "Postgres trigger support integrated with Django models."
@@ -1818,4 +1803,4 @@ testing = ["func-timeout", "jaraco.itertools", "pytest (>=4.6)", "pytest-black (
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.7.0,<4"
-content-hash = "4ae2651bfa89779e5c3011ce9720bf2b79416d0700efc4714f4983dfe1323742"
+content-hash = "c912743062edb11f3cd91d8972f82de82e74dbd0b9648005cf67fe74d1a20923"
