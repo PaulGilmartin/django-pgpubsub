@@ -50,7 +50,7 @@ documentation = "https://django-pgpubsub.readthedocs.io"
 [tool.poetry.dependencies]
 python = ">=3.7.0,<4"
 django = ">=2"
-django-pgtrigger = ">=2.4.0"
+django-pgtrigger = ">=4.6.0"
 opentelemetry-api = ">=1.17.0"
 
 [tool.poetry.dev-dependencies]
@@ -85,3 +85,5 @@ addopts = "--reuse-db"
 testpaths = "pgpubsub/tests"
 norecursedirs = ".venv"
 DJANGO_SETTINGS_MODULE = "settings"
+filterwarnings = ["ignore::DeprecationWarning:django.http.request:",
+    "ignore::DeprecationWarning:django.utils.encoding:"]
