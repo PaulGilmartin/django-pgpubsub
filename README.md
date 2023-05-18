@@ -350,7 +350,11 @@ To facilitate this ``Notification`` entity stores ``db_version`` field which
 contains the latest migration identier for the django app the ``Author`` is
 defined in. The deployer may check if there are any migrations with the old
 ``db_version`` before deploying version that potentially breaks backward
-compatibility in terms of the data structure (in this case version 3).
+compatibility in terms of the data structure. 
+
+In this case deployer should check that there are no ``Notification`` entities
+with ``db_version`` before the version that was assigned to the migrations in
+release 2.
 
 Listeners
 --------
