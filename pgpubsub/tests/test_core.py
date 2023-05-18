@@ -5,6 +5,7 @@ from unittest.mock import patch
 from django.contrib.auth.models import User
 from django.db import connection
 from django.db.transaction import atomic
+from django.db.migrations.recorder import MigrationRecorder
 import pytest
 
 from pgpubsub.listen import listen_to_channels, process_notifications, listen
@@ -156,8 +157,8 @@ def test_recover_notifications_after_exception(pg_connection):
     # an exception
     notification = Notification.objects.last()
     payload = json.loads(notification.payload)
-    payload['new']['user_id'] = int(author.user_id) + 1
-    notification.payload = str(payload)
+    del payload['app']
+    notification.payload = json.dumps(payload)
     notification.pk = None
     notification.save()
 
@@ -202,3 +203,11 @@ def test_persistent_notification_has_a_creation_timestamp(pg_connection, tx_star
     assert 1 == len(pg_connection.notifies)
     stored_notification = Notification.from_channel(channel=MediaTriggerChannel).get()
     assert stored_notification.created_at >= tx_start_time
+
+@pytest.mark.django_db(transaction=True)
+def test_persistent_notification_has_a_db_version(pg_connection, tx_start_time):
+    latest_app_migration = MigrationRecorder.Migration.objects.filter(app='tests').latest('id')
+    Media.objects.create(name='avatar.jpg', content_type='image/png', size=15000)
+    assert 1 == len(pg_connection.notifies)
+    stored_notification = Notification.from_channel(channel=MediaTriggerChannel).get()
+    assert stored_notification.db_version == latest_app_migration.id
