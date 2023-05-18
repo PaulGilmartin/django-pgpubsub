@@ -342,13 +342,13 @@ When release 3 is deployed the application may assume that every ``Author`` has
 ``email``. The problem is that the notifications produced before release 2 is
 deployed may be still not processed (for example the listener process was not
 run or there was an issue with the processing of some specific notification and
-it was skipped). In order to safely deploy releaes 3 the deployer need to know
+it was skipped). In order to safely deploy release 3 the deployer need to know
 if there are any notifications that were created before django migrations of
 the release 2 were applied.
 
 To facilitate this ``Notification`` entity stores ``db_version`` field which
 contains the latest migration identier for the django app the ``Author`` is
-defined in. The deployer may check if there are any migrations with the old
+defined in. The deployer may check if there are any notifications with the old
 ``db_version`` before deploying version that potentially breaks backward
 compatibility in terms of the data structure. 
 
