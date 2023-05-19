@@ -9,6 +9,7 @@ from pgpubsub.notify import notify
 
 
 class Media(models.Model):
+    key = models.AutoField(primary_key=True)
     name = models.TextField()
     content_type = models.TextField(null=True)
     size = models.BigIntegerField(null=True)

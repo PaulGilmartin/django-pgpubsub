@@ -209,10 +209,11 @@ class TriggerChannel(BaseChannel):
                     new_state[field] = value
 
             model_data.append(
-                {'fields': new_state,
-                 'id': new_state['id'],
-                 'model': f'{app}.{model_name}',
-                 },
+                {
+                    'fields': new_state,
+                    'id': new_state[model_cls._meta.pk.name],
+                    'model': f'{app}.{model_name}',
+                },
             )
         return model_data
 

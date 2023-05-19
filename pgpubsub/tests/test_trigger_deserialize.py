@@ -94,7 +94,7 @@ def test_deserialize_edit_payload():
         insert_notification.payload)
 
     assert media.name == deserialized['new'].name
-    assert media.pk == deserialized['new'].id
+    assert media.pk == deserialized['new'].pk
     assert media.size == deserialized['new'].size
 
     media.name = 'avatar_2.jpg'
@@ -108,7 +108,7 @@ def test_deserialize_edit_payload():
         edit_notification.payload)
 
     assert deserialized['new'].name == media.name
-    assert deserialized['new'].id == media.pk
+    assert deserialized['new'].pk == media.pk
     assert deserialized['new'].size == media.size
 
 
