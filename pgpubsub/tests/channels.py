@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import datetime
 
 from pgpubsub.channel import Channel, TriggerChannel
-from pgpubsub.tests.models import Author, Media, Post
+from pgpubsub.tests.models import Author, Child, Media, Post
 
 
 @dataclass
@@ -20,6 +20,12 @@ class PostReads(Reads):
 @dataclass
 class MediaTriggerChannel(TriggerChannel):
     model = Media
+    lock_notifications = True
+
+
+@dataclass
+class ChildTriggerChannel(TriggerChannel):
+    model = Child
     lock_notifications = True
 
 

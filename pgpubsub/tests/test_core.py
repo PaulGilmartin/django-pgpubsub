@@ -122,7 +122,7 @@ def test_process_stored_notifications(pg_connection):
     process_stored_notifications()
     pg_connection.poll()
     # One notification for each lockable channel
-    assert 3 == len(pg_connection.notifies)
+    assert 4 == len(pg_connection.notifies)
     process_notifications(pg_connection)
     assert 0 == Notification.objects.count()
     assert 2 == Post.objects.count()
@@ -203,6 +203,7 @@ def test_persistent_notification_has_a_creation_timestamp(pg_connection, tx_star
     assert 1 == len(pg_connection.notifies)
     stored_notification = Notification.from_channel(channel=MediaTriggerChannel).get()
     assert stored_notification.created_at >= tx_start_time
+
 
 @pytest.mark.django_db(transaction=True)
 def test_persistent_notification_has_a_db_version(pg_connection, tx_start_time):

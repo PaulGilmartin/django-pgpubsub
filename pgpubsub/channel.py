@@ -207,14 +207,15 @@ class TriggerChannel(BaseChannel):
                 elif field in db_fields:
                     field = db_fields[field].name
                     new_state[field] = value
-
-            model_data.append(
-                {
-                    'fields': new_state,
-                    'id': new_state[model_cls._meta.pk.name],
-                    'model': f'{app}.{model_name}',
-                },
-            )
+            pk = model_cls._meta.pk
+            serialized = {
+                'fields': new_state,
+                'pk': new_state[pk.name],
+                'model': f'{app}.{model_name}',
+            }
+            if isinstance(pk, models.fields.related.OneToOneField):
+                serialized['fields'][pk.remote_field.model._meta.pk.name] = serialized['pk']
+            model_data.append(serialized)
         return model_data
 
 
