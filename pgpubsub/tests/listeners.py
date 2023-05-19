@@ -68,4 +68,4 @@ def scan_media(old: Media, new: Media):
 
 @pgpubsub.post_save_listener(ChildTriggerChannel)
 def post_child_save(old: Child, new: Child):
-    print(f'Perform virus scan on the new media {new}.')
+    print(f'New child created {new}.')
