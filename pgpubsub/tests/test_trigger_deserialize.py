@@ -13,10 +13,11 @@ from pgpubsub.models import Notification
 from pgpubsub.tests.channels import (
     AuthorTriggerChannel,
     ChildTriggerChannel,
+    ChildOfAbstractTriggerChannel,
     MediaTriggerChannel,
     PostTriggerChannel,
 )
-from pgpubsub.tests.models import Post, Author, Child, Media
+from pgpubsub.tests.models import Post, Author, Child, ChildOfAbstract, Media
 
 
 def test_deserialize_post_trigger_channel():
@@ -150,6 +151,19 @@ def test_deserialize_child_payload():
     insert_notification = Notification.from_channel(channel=ChildTriggerChannel).last()
 
     deserialized = ChildTriggerChannel.deserialize(insert_notification.payload)
+
+    assert child.pk == deserialized['new'].pk
+    assert child.key == deserialized['new'].key
+
+
+@pytest.mark.django_db(transaction=True)
+def test_deserialize_child_of_abstract_payload():
+    child = ChildOfAbstract.objects.create()
+
+    assert 1 == Notification.objects.all().count()
+    insert_notification = Notification.from_channel(channel=ChildOfAbstractTriggerChannel).last()
+
+    deserialized = ChildOfAbstractTriggerChannel.deserialize(insert_notification.payload)
 
     assert child.pk == deserialized['new'].pk
     assert child.key == deserialized['new'].key
