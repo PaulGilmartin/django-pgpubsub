@@ -16,7 +16,8 @@ class Media(models.Model):
 
 
 class Author(models.Model):
-    user = models.ForeignKey(User, on_delete=models.PROTECT, null=True)
+    user = models.ForeignKey(
+        User, on_delete=models.PROTECT, null=True)
     name = models.TextField()
     age = models.IntegerField(null=True)
     active = models.BooleanField(default=True)
