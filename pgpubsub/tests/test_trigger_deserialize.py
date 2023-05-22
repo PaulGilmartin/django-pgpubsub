@@ -144,26 +144,20 @@ def test_deserialize_delete_payload():
 
 
 @pytest.mark.django_db(transaction=True)
-def test_deserialize_child_payload():
-    child = Child.objects.create()
+@pytest.mark.parametrize(
+    "cls,trigger_channel_cls",
+    [
+        (Child, ChildTriggerChannel),
+        (ChildOfAbstract, ChildOfAbstractTriggerChannel)
+    ]
+)
+def test_deserialize_child_payload(cls, trigger_channel_cls):
+    child = cls.objects.create()
 
     assert 1 == Notification.objects.all().count()
-    insert_notification = Notification.from_channel(channel=ChildTriggerChannel).last()
+    insert_notification = Notification.from_channel(channel=trigger_channel_cls).last()
 
-    deserialized = ChildTriggerChannel.deserialize(insert_notification.payload)
-
-    assert child.pk == deserialized['new'].pk
-    assert child.key == deserialized['new'].key
-
-
-@pytest.mark.django_db(transaction=True)
-def test_deserialize_child_of_abstract_payload():
-    child = ChildOfAbstract.objects.create()
-
-    assert 1 == Notification.objects.all().count()
-    insert_notification = Notification.from_channel(channel=ChildOfAbstractTriggerChannel).last()
-
-    deserialized = ChildOfAbstractTriggerChannel.deserialize(insert_notification.payload)
+    deserialized = trigger_channel_cls.deserialize(insert_notification.payload)
 
     assert child.pk == deserialized['new'].pk
     assert child.key == deserialized['new'].key
