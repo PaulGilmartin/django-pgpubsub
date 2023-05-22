@@ -16,8 +16,7 @@ class Media(models.Model):
 
 
 class Author(models.Model):
-    user = models.ForeignKey(
-        User, on_delete=models.PROTECT, null=True)
+    user = models.ForeignKey(User, on_delete=models.PROTECT, null=True)
     name = models.TextField()
     age = models.IntegerField(null=True)
     active = models.BooleanField(default=True)
@@ -55,4 +54,15 @@ class Parent(models.Model):
 
 
 class Child(Parent):
+    pass
+
+
+class AbstractParent(models.Model):
+    key = models.AutoField(primary_key=True, editable=False)
+
+    class Meta:
+        abstract = True
+
+
+class ChildOfAbstract(AbstractParent):
     pass

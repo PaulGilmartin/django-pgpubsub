@@ -30,8 +30,7 @@ def test_post_fetch_notify(pg_connection):
     Notification.from_channel(channel=AuthorTriggerChannel).get()
     assert 1 == len(pg_connection.notifies)
     today = datetime.date.today()
-    post = Post.objects.create(
-        author=author, content='first post', date=today)
+    post = Post.objects.create(author=author, content='first post', date=today)
     assert post_reads_per_date_cache[today] == {}
     Post.fetch(post.pk)
     assert 1 == Notification.objects.count()
@@ -46,8 +45,7 @@ def test_post_fetch_notify(pg_connection):
 def test_author_insert_notify(pg_connection):
     author = Author.objects.create(name='Billy')
     assert 1 == len(pg_connection.notifies)
-    stored_notification = Notification.from_channel(
-        channel=AuthorTriggerChannel).get()
+    stored_notification = Notification.from_channel(channel=AuthorTriggerChannel).get()
     assert 'old' in stored_notification.payload
     assert 'new' in stored_notification.payload
     assert not Post.objects.exists()
@@ -122,7 +120,7 @@ def test_process_stored_notifications(pg_connection):
     process_stored_notifications()
     pg_connection.poll()
     # One notification for each lockable channel
-    assert 4 == len(pg_connection.notifies)
+    assert 5 == len(pg_connection.notifies)
     process_notifications(pg_connection)
     assert 0 == Notification.objects.count()
     assert 2 == Post.objects.count()
