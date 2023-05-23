@@ -135,6 +135,8 @@ class LockableNotificationProcessor(NotificationProcessor):
 
 class NotificationRecoveryProcessor(LockableNotificationProcessor):
 
+    BATCH_SIZE = 500
+
     def validate(self):
         if self.notification.payload != 'null':
             raise InvalidNotificationProcessor
