@@ -152,8 +152,7 @@ def test_recover_notifications(pg_connection):
 
 @pytest.mark.django_db(transaction=True)
 def test_recover_notifications_in_batches(pg_connection):
-    TEST_BATCH_SIZE = 2
-    ENTITIES_COUNT = TEST_BATCH_SIZE * 2 + 1
+    ENTITIES_COUNT = 5
     for i in range(ENTITIES_COUNT):
         Author.objects.create(name=f'Billy{i}')
     pg_connection.poll()
@@ -161,9 +160,7 @@ def test_recover_notifications_in_batches(pg_connection):
     assert ENTITIES_COUNT == Notification.objects.count()
     assert 0 == Post.objects.count()
     _simulate_listener_does_not_receive_notifications(pg_connection)
-    with patch('pgpubsub.listen.POLL', False), patch.object(
-            NotificationRecoveryProcessor, 'BATCH_SIZE', TEST_BATCH_SIZE
-    ):
+    with patch('pgpubsub.listen.POLL', False):
         listen(recover=True)
     pg_connection.poll()
     assert 0 == Notification.objects.count()
@@ -199,8 +196,7 @@ def test_recover_notifications_after_exception(pg_connection):
     assert 2 == Post.objects.count()
 
 @pytest.mark.django_db(transaction=True)
-def test_recover_notifications_in_batches_after_exception(pg_connection):
-    TEST_BATCH_SIZE = 2
+def test_recover_multiple_notifications_after_exception(pg_connection):
     Author.objects.create(name=f'Billy_1')
     Author.objects.create(name=f'Billy_2')
     _create_notification_that_cannot_be_processed()
@@ -220,9 +216,7 @@ def test_recover_notifications_in_batches_after_exception(pg_connection):
     assert 0 == Post.objects.count()
 
     _simulate_listener_does_not_receive_notifications(pg_connection)
-    with patch('pgpubsub.listen.POLL', False), patch.object(
-            NotificationRecoveryProcessor, 'BATCH_SIZE', TEST_BATCH_SIZE
-    ):
+    with patch('pgpubsub.listen.POLL', False):
         listen(recover=True)
     pg_connection.poll()
     assert BROKEN_COUNT == Notification.objects.count()
