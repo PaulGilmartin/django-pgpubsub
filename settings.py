@@ -11,6 +11,7 @@ INSTALLED_APPS = [
 ]
 # Database url comes from the DATABASE_URL env var
 DATABASES = {'default': dj_database_url.config()}
+DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = False
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
