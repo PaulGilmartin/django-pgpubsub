@@ -151,7 +151,7 @@ def test_recover_notifications(pg_connection):
     assert 2 == Post.objects.count()
 
 @pytest.mark.django_db(transaction=True)
-def test_recover_notifications_in_batches(pg_connection):
+def test_recover_multiple_notifications(pg_connection):
     ENTITIES_COUNT = 5
     for i in range(ENTITIES_COUNT):
         Author.objects.create(name=f'Billy{i}')
