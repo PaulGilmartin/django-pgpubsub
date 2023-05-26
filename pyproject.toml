@@ -83,6 +83,8 @@ xfail_strict = true
 addopts = "--reuse-db"
 testpaths = "pgpubsub/tests"
 norecursedirs = ".venv"
+log_cli = true
+log_cli_level = "INFO"
 DJANGO_SETTINGS_MODULE = "settings"
 filterwarnings = ["ignore::DeprecationWarning:django.http.request:",
     "ignore::DeprecationWarning:django.utils.encoding:"]
