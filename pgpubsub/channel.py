@@ -183,30 +183,24 @@ class TriggerChannel(BaseChannel):
         fields = {
             field.name: field for field in model_cls._meta.fields
         }
-        db_fields = {
-            field.db_column: field for field in model_cls._meta.fields
+        db_columns = {
+            field.column: field for field in model_cls._meta.fields
         }
 
         original_state = payload[state]
         new_state = {}
         model_data = []
         if payload[state] is not None:
-            for field in list(original_state):
+            for db_field in list(original_state):
                 # Triggers serialize the notification payload with
                 # respect to how the model fields look as columns
-                # in the database. We therefore need to take
-                # care to map xxx_id named columns to the corresponding
-                # xxx model field and also to account for model fields
-                # with alternative database column names as declared
-                # by the db_column attribute.
-                value = original_state.pop(field)
-                if field.endswith('_id'):
-                    field = field.rsplit('_id')[0]
-                if field in fields:
-                    new_state[field] = value
-                elif field in db_fields:
-                    field = db_fields[field].name
-                    new_state[field] = value
+                # in the database. We therefore need to translate
+                # to model fields and skip outdated fields
+                value = original_state.pop(db_field)
+                if db_field in db_columns:
+                    model_field = db_columns[db_field].name
+                    new_state[model_field] = value
+
             pk = model_cls._meta.pk
             serialized = {
                 'fields': new_state,
