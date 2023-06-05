@@ -1,9 +1,13 @@
+import logging
 from typing import Type, Union
 
 from django.db import connection
 from django.db.transaction import atomic
 
 from pgpubsub.channel import locate_channel, Channel, registry
+
+
+logger = logging.getLogger(__name__)
 
 
 @atomic
@@ -13,7 +17,7 @@ def notify(channel: Union[Type[Channel], str], **kwargs):
     serialized = channel.serialize()
     with connection.cursor() as cursor:
         name = channel_cls.name()
-        print(f'Notifying channel {name} with payload {serialized}')
+        logger.info(f'Notifying channel {name} with payload {serialized}')
         cursor.execute(
             f"select pg_notify('{channel_cls.listen_safe_name()}', '{serialized}');")
         if channel_cls.lock_notifications:
@@ -48,7 +52,7 @@ def process_stored_notifications(channels=None):
         lock_channels = [c for c in channels if c.lock_notifications]
         for channel_cls in lock_channels:
             payload = 'null'
-            print(
+            logger.info(
                 f'Notifying channel {channel_cls.name()} to recover '
                 f'previously stored notifications.\n')
             cursor.execute(

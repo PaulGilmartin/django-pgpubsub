@@ -1,3 +1,4 @@
+import logging
 import multiprocessing
 import select
 from typing import List, Union
@@ -15,6 +16,7 @@ from pgpubsub.channel import (
 )
 from pgpubsub.models import Notification
 
+logger = logging.getLogger(__name__)
 
 POLL = True
 
@@ -30,7 +32,7 @@ def listen(
         process_stored_notifications(channels)
         process_notifications(pg_connection)
 
-    print('Listening for notifications... \n')
+    logger.info('Listening for notifications... \n')
     while POLL:
         if select.select([pg_connection], [], [], 1) == ([], [], []):
             pass
@@ -38,8 +40,8 @@ def listen(
             try:
                 process_notifications(pg_connection)
             except Exception as e:
-                print(f'Encountered exception {e}')
-                print('Restarting process')
+                logger.error(f'Encountered exception {e}', exc_info=e)
+                logger.info('Restarting process')
                 connection.close()
                 process = multiprocessing.Process(target=listen, args=(channels,))
                 process.start()
@@ -60,7 +62,7 @@ def listen_to_channels(channels: Union[List[BaseChannel], List[str]] = None):
         raise ChannelNotFound()
     cursor = connection.cursor()
     for channel in channels:
-        print(f'Listening on {channel.name()}\n')
+        logger.info(f'Listening on {channel.name()}\n')
         cursor.execute(f'LISTEN {channel.listen_safe_name()};')
     return connection.connection
 
@@ -96,7 +98,7 @@ class NotificationProcessor:
             raise InvalidNotificationProcessor
 
     def process(self):
-        print(f'Processing notification for {self.channel_cls.name()}\n')
+        logger.info(f'Processing notification for {self.channel_cls.name()}\n')
         return self._execute()
 
     def _execute(self):
@@ -113,7 +115,7 @@ class LockableNotificationProcessor(NotificationProcessor):
             raise InvalidNotificationProcessor
 
     def process(self):
-        print(
+        logger.info(
             f'Processing notification for {self.channel_cls.name()}')
         notification = (
             Notification.objects.select_for_update(
@@ -123,11 +125,10 @@ class LockableNotificationProcessor(NotificationProcessor):
             ).first()
         )
         if notification is None:
-            print(f'Could not obtain a lock on notification '
-                  f'{self.notification.pid}')
-            print('\n')
+            logger.info(f'Could not obtain a lock on notification '
+                        f'{self.notification.pid}\n')
         else:
-            print(f'Obtained lock on {notification}')
+            logger.info(f'Obtained lock on {notification}')
             self.notification = notification
             self._execute()
             self.notification.delete()
@@ -140,21 +141,24 @@ class NotificationRecoveryProcessor(LockableNotificationProcessor):
             raise InvalidNotificationProcessor
 
     def process(self):
-        print(f'Processing all notifications for channel {self.channel_cls.name()} \n')
+        logger.info(f'Processing all notifications for channel {self.channel_cls.name()} \n')
         notifications = (
             Notification.objects.select_for_update(
                 skip_locked=True).filter(channel=self.notification.channel).iterator()
         )
-        print(f'Found notifications: {notifications}')
+        logger.info(f'Found notifications: {notifications}')
         for notification in notifications:
             self.notification = notification
             try:
                 with transaction.atomic():
                     self._execute()
             except Exception as e:
-                print(f'Encountered {e} exception when processing notification {notification}')
+                logger.error(
+                    f'Encountered {e} exception when processing notification {notification}',
+                    exc_info=e
+                )
             else:
-                print(f'Successfully processed notification {notification}')
+                logger.info(f'Successfully processed notification {notification}')
                 self.notification.delete()
 
 
