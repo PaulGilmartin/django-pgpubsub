@@ -13,6 +13,7 @@ class Media(models.Model):
     name = models.TextField()
     content_type = models.TextField(null=True)
     size = models.BigIntegerField(null=True)
+    store_id = models.TextField(null=True)
 
 
 class Author(models.Model):

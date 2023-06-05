@@ -87,6 +87,7 @@ def test_deserialize_edit_payload():
         name='avatar.jpg',
         content_type='image/png',
         size=15000,
+        store_id="some-value",
     )
     assert 1 == Notification.objects.all().count()
     insert_notification = Notification.from_channel(
@@ -99,6 +100,7 @@ def test_deserialize_edit_payload():
     assert media.pk == deserialized['new'].pk
     assert media.key == deserialized['new'].key
     assert media.size == deserialized['new'].size
+    assert media.store_id == deserialized['new'].store_id
 
     media.name = 'avatar_2.jpg'
     media.save()
@@ -114,6 +116,7 @@ def test_deserialize_edit_payload():
     assert deserialized['new'].pk == media.pk
     assert deserialized['new'].key == media.key
     assert deserialized['new'].size == media.size
+    assert media.store_id == deserialized['new'].store_id
 
 
 @pytest.mark.django_db(transaction=True)
