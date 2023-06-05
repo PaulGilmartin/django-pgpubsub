@@ -674,6 +674,25 @@ Note that this recovery option can be enabled whenever we use the `listen` manag
 by supplying it with the `--recover` option. This will tell the listening processes to replay
 any missed stored notifications automatically when it starts up.
 
+It is important to enable server side cursors in the django settings used by
+the listener. Their usage makes memory consumption much lower during the
+recovery and that is important if there is a need to recover many notifications:
+
+```
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        ...,
+        "DISABLE_SERVER_SIDE_CURSORS": False,
+    }
+}
+```
+
+or if ``dj_database_url`` is used:
+```
+DATABASES = {'default': dj_database_url.config()}
+DATABASES['default']["DISABLE_SERVER_SIDE_CURSORS"] = False
+```
 
 Live Demos
 ==========

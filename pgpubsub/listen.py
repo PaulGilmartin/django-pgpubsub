@@ -143,7 +143,7 @@ class NotificationRecoveryProcessor(LockableNotificationProcessor):
         print(f'Processing all notifications for channel {self.channel_cls.name()} \n')
         notifications = (
             Notification.objects.select_for_update(
-                skip_locked=True).filter(channel=self.notification.channel)
+                skip_locked=True).filter(channel=self.notification.channel).iterator()
         )
         print(f'Found notifications: {notifications}')
         for notification in notifications:
