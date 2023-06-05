@@ -6,11 +6,13 @@ from django.db.transaction import atomic
 import pgpubsub
 from pgpubsub.tests.channels import (
     AuthorTriggerChannel,
+    ChildOfAbstractTriggerChannel,
+    ChildTriggerChannel,
     MediaTriggerChannel,
     PostReads,
     PostTriggerChannel,
 )
-from pgpubsub.tests.models import Author, Media, Post
+from pgpubsub.tests.models import Author, Child, ChildOfAbstract, Media, Post
 
 post_reads_per_date_cache = defaultdict(dict)
 author_reads_cache = {}
@@ -63,3 +65,13 @@ def scan_media(old: Media, new: Media):
         print(f'Perform virus scan on the new media {new}.')
     else:
         print(f'Media updated; scan {new} all over again.')
+
+
+@pgpubsub.post_save_listener(ChildTriggerChannel)
+def post_child_save(old: Child, new: Child):
+    print(f'New child created {new}.')
+
+
+@pgpubsub.post_save_listener(ChildOfAbstractTriggerChannel)
+def post_child_of_abstract_save(old: ChildOfAbstract, new: ChildOfAbstract):
+    print(f'New child of abstract parent created {new}.')

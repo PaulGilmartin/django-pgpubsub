@@ -12,10 +12,12 @@ from pgpubsub import TriggerChannel
 from pgpubsub.models import Notification
 from pgpubsub.tests.channels import (
     AuthorTriggerChannel,
+    ChildTriggerChannel,
+    ChildOfAbstractTriggerChannel,
     MediaTriggerChannel,
     PostTriggerChannel,
 )
-from pgpubsub.tests.models import Post, Author, Media
+from pgpubsub.tests.models import Post, Author, Child, ChildOfAbstract, Media
 
 
 def test_deserialize_post_trigger_channel():
@@ -94,7 +96,8 @@ def test_deserialize_edit_payload():
         insert_notification.payload)
 
     assert media.name == deserialized['new'].name
-    assert media.pk == deserialized['new'].id
+    assert media.pk == deserialized['new'].pk
+    assert media.key == deserialized['new'].key
     assert media.size == deserialized['new'].size
 
     media.name = 'avatar_2.jpg'
@@ -108,7 +111,8 @@ def test_deserialize_edit_payload():
         edit_notification.payload)
 
     assert deserialized['new'].name == media.name
-    assert deserialized['new'].id == media.pk
+    assert deserialized['new'].pk == media.pk
+    assert deserialized['new'].key == media.key
     assert deserialized['new'].size == media.size
 
 
@@ -137,3 +141,23 @@ def test_deserialize_delete_payload():
     assert deserialized['old'].date.time() == post.date.time()
     assert deserialized['old'].id == original_id
     assert deserialized['new'] is None
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.parametrize(
+    "cls,trigger_channel_cls",
+    [
+        (Child, ChildTriggerChannel),
+        (ChildOfAbstract, ChildOfAbstractTriggerChannel)
+    ]
+)
+def test_deserialize_child_payload(cls, trigger_channel_cls):
+    child = cls.objects.create()
+
+    assert 1 == Notification.objects.all().count()
+    insert_notification = Notification.from_channel(channel=trigger_channel_cls).last()
+
+    deserialized = trigger_channel_cls.deserialize(insert_notification.payload)
+
+    assert child.pk == deserialized['new'].pk
+    assert child.key == deserialized['new'].key
