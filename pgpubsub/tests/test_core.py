@@ -8,7 +8,12 @@ from django.db.transaction import atomic
 from django.db.migrations.recorder import MigrationRecorder
 import pytest
 
-from pgpubsub.listen import listen_to_channels, process_notifications, listen
+from pgpubsub.listen import (
+    listen_to_channels,
+    process_notifications,
+    listen,
+    NotificationRecoveryProcessor,
+)
 from pgpubsub.models import Notification
 from pgpubsub.notify import process_stored_notifications
 from pgpubsub.tests.channels import (
@@ -107,6 +112,12 @@ def test_author_bulk_insert_notify(pg_connection):
     assert [author.pk for author in authors] == list(post_authors)
 
 
+def _simulate_listener_does_not_receive_notifications(pg_connection):
+    pg_connection.notifies = []
+    pg_connection.poll()
+    assert 0 == len(pg_connection.notifies)
+
+
 @pytest.mark.django_db(transaction=True)
 def test_process_stored_notifications(pg_connection):
     Author.objects.create(name='Billy')
@@ -114,15 +125,11 @@ def test_process_stored_notifications(pg_connection):
     assert 2 == len(pg_connection.notifies)
     assert 2 == Notification.objects.count()
     assert 0 == Post.objects.count()
-    # Simulate when the listener fails to
-    # receive notifications
-    pg_connection.notifies = []
-    pg_connection.poll()
-    assert 0 == len(pg_connection.notifies)
+    _simulate_listener_does_not_receive_notifications(pg_connection)
     process_stored_notifications()
     pg_connection.poll()
     # One notification for each lockable channel
-    assert 3 == len(pg_connection.notifies)
+    assert 5 == len(pg_connection.notifies)
     process_notifications(pg_connection)
     assert 0 == Notification.objects.count()
     assert 2 == Post.objects.count()
@@ -136,32 +143,43 @@ def test_recover_notifications(pg_connection):
     assert 2 == len(pg_connection.notifies)
     assert 2 == Notification.objects.count()
     assert 0 == Post.objects.count()
-    # Simulate when the listener fails to
-    # receive notifications
-    pg_connection.notifies = []
-    pg_connection.poll()
-    assert 0 == len(pg_connection.notifies)
+    _simulate_listener_does_not_receive_notifications(pg_connection)
     with patch('pgpubsub.listen.POLL', False):
         listen(recover=True)
     pg_connection.poll()
     assert 0 == Notification.objects.count()
     assert 2 == Post.objects.count()
 
-
 @pytest.mark.django_db(transaction=True)
-def test_recover_notifications_after_exception(pg_connection):
-    user = User.objects.create(username='Billy')
-    author = Author.objects.create(name='Billy', user=user)
+def test_recover_multiple_notifications(pg_connection):
+    ENTITIES_COUNT = 5
+    for i in range(ENTITIES_COUNT):
+        Author.objects.create(name=f'Billy{i}')
+    pg_connection.poll()
+    assert ENTITIES_COUNT == len(pg_connection.notifies)
+    assert ENTITIES_COUNT == Notification.objects.count()
+    assert 0 == Post.objects.count()
+    _simulate_listener_does_not_receive_notifications(pg_connection)
+    with patch('pgpubsub.listen.POLL', False):
+        listen(recover=True)
+    pg_connection.poll()
+    assert 0 == Notification.objects.count()
+    assert ENTITIES_COUNT == Post.objects.count()
 
-    # Create a Notification with a payload which will produce
-    # an exception
+
+def _create_notification_that_cannot_be_processed():
     notification = Notification.objects.last()
     payload = json.loads(notification.payload)
-    del payload['app']
+    payload.pop('app', None)
     notification.payload = json.dumps(payload)
     notification.pk = None
     notification.save()
 
+
+@pytest.mark.django_db(transaction=True)
+def test_recover_notifications_after_exception(pg_connection):
+    author = Author.objects.create(name='Billy')
+    _create_notification_that_cannot_be_processed()
     Author.objects.create(name='Billy2')
 
     pg_connection.poll()
@@ -170,15 +188,39 @@ def test_recover_notifications_after_exception(pg_connection):
     assert 3 == Notification.objects.count()
     assert 0 == Post.objects.count()
 
-    # Simulate when the listener fails to receive notifications
-    pg_connection.notifies = []
-    pg_connection.poll()
-    assert 0 == len(pg_connection.notifies)
+    _simulate_listener_does_not_receive_notifications(pg_connection)
     with patch('pgpubsub.listen.POLL', False):
         listen(recover=True)
     pg_connection.poll()
     assert 1 == Notification.objects.count()
     assert 2 == Post.objects.count()
+
+@pytest.mark.django_db(transaction=True)
+def test_recover_multiple_notifications_after_exception(pg_connection):
+    Author.objects.create(name=f'Billy_1')
+    Author.objects.create(name=f'Billy_2')
+    _create_notification_that_cannot_be_processed()
+    Author.objects.create(name=f'Billy_3')
+    _create_notification_that_cannot_be_processed()
+    _create_notification_that_cannot_be_processed()
+    _create_notification_that_cannot_be_processed()
+    Author.objects.create(name=f'Billy_4')
+    Author.objects.create(name=f'Billy_5')
+
+    GOOD_COUNT = 5
+    BROKEN_COUNT = 4
+
+    pg_connection.poll()
+    assert GOOD_COUNT == len(pg_connection.notifies)
+    assert GOOD_COUNT + BROKEN_COUNT == Notification.objects.count()
+    assert 0 == Post.objects.count()
+
+    _simulate_listener_does_not_receive_notifications(pg_connection)
+    with patch('pgpubsub.listen.POLL', False):
+        listen(recover=True)
+    pg_connection.poll()
+    assert BROKEN_COUNT == Notification.objects.count()
+    assert GOOD_COUNT == Post.objects.count()
 
 
 @pytest.mark.django_db(transaction=True)
@@ -203,6 +245,7 @@ def test_persistent_notification_has_a_creation_timestamp(pg_connection, tx_star
     assert 1 == len(pg_connection.notifies)
     stored_notification = Notification.from_channel(channel=MediaTriggerChannel).get()
     assert stored_notification.created_at >= tx_start_time
+
 
 @pytest.mark.django_db(transaction=True)
 def test_persistent_notification_has_a_db_version(pg_connection, tx_start_time):
