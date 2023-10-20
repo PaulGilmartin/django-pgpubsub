@@ -2,7 +2,7 @@ from functools import wraps
 from typing import Union, Type
 
 import pgtrigger
-from pgtrigger import Trigger
+from pgtrigger import Trigger, registered
 
 from pgpubsub.channel import (
     locate_channel,
@@ -85,8 +85,16 @@ def _trigger_action_listener(channel, when, operation):
 def trigger_listener(channel: Union[Type[Channel], str], trigger: Trigger):
     channel = locate_channel(channel)
     def _trig_listener(callback):
+        triggers_already_registered = registered()
+        model_to_trigger_name = [(model, trig.name) for (model, trig) in triggers_already_registered]
+
+        if (channel.model, trigger.name) not in model_to_trigger_name:
+            # This can happen when the same channel/trigger is used
+            # for multiple listeners
+            pgtrigger.register(trigger)(channel.model)
+
         channel.register(callback)
-        pgtrigger.register(trigger)(channel.model)
+
         @wraps(callback)
         def wrapper(*args, **kwargs):
             return callback(*args, **kwargs)

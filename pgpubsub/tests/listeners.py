@@ -47,6 +47,11 @@ def create_first_post_for_author(old: Author, new: Author):
     )
 
 
+@pgpubsub.post_insert_listener(AuthorTriggerChannel)
+def another_author_trigger(old: Author, new: Author):
+    print(f'Another author trigger')
+
+
 @pgpubsub.post_delete_listener(PostTriggerChannel)
 def email_author(old: Post, new: Post):
     author = Author.objects.get(pk=old.author_id)
