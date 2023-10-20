@@ -2,7 +2,6 @@ import datetime
 import json
 from unittest.mock import patch
 
-from django.contrib.auth.models import User
 from django.db import connection
 from django.db.transaction import atomic
 from django.db.migrations.recorder import MigrationRecorder
@@ -12,7 +11,6 @@ from pgpubsub.listen import (
     listen_to_channels,
     process_notifications,
     listen,
-    NotificationRecoveryProcessor,
 )
 from pgpubsub.models import Notification
 from pgpubsub.notify import process_stored_notifications
