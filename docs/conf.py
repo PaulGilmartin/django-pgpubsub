@@ -16,22 +16,15 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
 import os
 import subprocess
 import sys
 
-import django
 import sphinx_rtd_theme
 
 
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('..'))
-os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
-django.setup()
-
 
 # -- Helper functions -----------------------------------------------------
 
@@ -77,7 +70,7 @@ default_role = 'any'
 
 # General information about the project.
 project = u'django-pgpubsub'
-copyright = u'2022, Opus 10'
+copyright = u'2023, Opus 10'
 author = u'Opus 10 Engineering'
 
 # The version info for the project you're documenting, acts as replacement for
