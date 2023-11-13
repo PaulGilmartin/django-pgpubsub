@@ -14,6 +14,11 @@ messaging services, such as
 [Celery](https://docs.celeryq.dev/en/stable/search.html?q=ampq)
 
 
+Documentation
+-------------
+
+https://django-pgpubsub.readthedocs.io/en/latest/
+
 Primary Authors
 ---------------
 * [Paul Gilmartin](https://github.com/PaulGilmartin)
