@@ -1,5 +1,4 @@
 import datetime
-import json
 from unittest.mock import patch
 
 from django.db import connection
@@ -167,9 +166,7 @@ def test_recover_multiple_notifications(pg_connection):
 
 def _create_notification_that_cannot_be_processed():
     notification = Notification.objects.last()
-    payload = json.loads(notification.payload)
-    payload.pop('app', None)
-    notification.payload = json.dumps(payload)
+    notification.payload.pop('app', None)
     notification.pk = None
     notification.save()
 
