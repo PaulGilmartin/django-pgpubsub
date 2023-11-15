@@ -12,10 +12,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunSQL(
-            sql="UPDATE pgpubsub_notification SET payload = (payload #>> '{}')::jsonb",
-            reverse_sql="UPDATE pgpubsub_notification SET payload = to_json(payload::text)::jsonb",
-        ),
         pgtrigger.migrations.RemoveTrigger(
             model_name='notification',
             name='pgpubsub_notification_set_db_version',

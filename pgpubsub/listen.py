@@ -1,4 +1,3 @@
-import json
 import logging
 import multiprocessing
 import select
@@ -126,7 +125,8 @@ class LockableNotificationProcessor(NotificationProcessor):
         notification = (
             Notification.objects.select_for_update(
                 skip_locked=True).filter(
-                Q(payload=CastToJSONB(Value(self.notification.payload))),
+                Q(payload=CastToJSONB(Value(self.notification.payload)))
+                    | Q(payload=self.notification.payload),
                 channel=self.notification.channel,
             ).first()
         )
