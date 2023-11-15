@@ -4,6 +4,7 @@ import select
 import sys
 from typing import List, Optional, Union
 
+from django.conf import settings
 from django.core.management import execute_from_command_line
 from django.db import connection, transaction
 from django.db.models import Func, Value, Q
@@ -163,11 +164,14 @@ class LockableNotificationProcessor(NotificationProcessor):
     def process(self):
         logger.info(
             f'Processing notification for {self.channel_cls.name()}')
+        extras_filter = getattr(settings, 'PGPUBSUB_LISTENER_FILTER', None)
+        extras_filter = [extras_filter] if extras_filter else []
         notification = (
             Notification.objects.select_for_update(
                 skip_locked=True).filter(
                 Q(payload=CastToJSONB(Value(self.notification.payload)))
                     | Q(payload=self.notification.payload),
+                *extras_filter,
                 channel=self.notification.channel,
             ).first()
         )

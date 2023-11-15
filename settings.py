@@ -1,3 +1,4 @@
+import os
 import dj_database_url
 
 SECRET_KEY = 'django-pgpubsub'
@@ -17,3 +18,5 @@ DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = False
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0:8000']
+
+PGPUBSUB_ENABLE_PAYLOAD_EXTRAS = os.environ.get('PGPUBSUB_ENABLE_PAYLOAD_EXTRAS', "False") == "True"

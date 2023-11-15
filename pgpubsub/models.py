@@ -1,6 +1,6 @@
-from typing import Type
+from typing import Optional, Type
 
-from django.db import models
+from django.db import connection, connections, models
 
 try:
     from django.db.models import JSONField
@@ -58,3 +58,12 @@ class Notification(models.Model):
     @classmethod
     def from_channel(cls, channel: Type[BaseChannel]):
         return cls.objects.filter(channel=channel.listen_safe_name())
+
+    @classmethod
+    def set_payload_extras_builder(cls, func_name: str, using: Optional[str] = None) -> None:
+        if using:
+            conn = connections[using]
+        else:
+            conn = connection
+        with conn.cursor() as cursor:
+            cursor.execute("set local pgpubsub.get_payload_extras_func = %s", (func_name,))

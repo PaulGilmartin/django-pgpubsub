@@ -7,7 +7,6 @@ from django.db.migrations.recorder import MigrationRecorder
 import pytest
 
 from pgpubsub.listen import (
-    listen_to_channels,
     process_notifications,
     listen,
 )
@@ -19,11 +18,6 @@ from pgpubsub.tests.channels import (
 )
 from pgpubsub.tests.listeners import post_reads_per_date_cache
 from pgpubsub.tests.models import Author, Media, Post
-
-
-@pytest.fixture()
-def pg_connection():
-    return listen_to_channels()
 
 
 @pytest.mark.django_db(transaction=True)
@@ -239,13 +233,6 @@ def test_media_insert_notify(pg_connection):
     stored_notification = Notification.from_channel(channel=MediaTriggerChannel).get()
     assert 'old' in stored_notification.payload
     assert 'new' in stored_notification.payload
-
-
-@pytest.fixture
-def tx_start_time(django_db_setup):
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT now();")
-        return cursor.fetchone()[0]
 
 
 @pytest.mark.django_db(transaction=True)
