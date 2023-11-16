@@ -20,7 +20,7 @@ Table of Contents
    notifications
    exactly_once_messaging
    recovery
-   payload_extras
+   payload_context
 
 
 .. toctree::

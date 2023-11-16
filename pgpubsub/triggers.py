@@ -18,8 +18,7 @@ class Notify(pgtrigger.Trigger):
     def get_declare(self, model: Type[Model]):
         return [
             ('payload', 'JSONB'),
-            ('get_payload_extras_func', 'TEXT'),
-            ('extras', 'JSONB')
+            ('notification_context', 'JSONB'),
         ]
 
     def _pre_notify(self):
@@ -30,13 +29,9 @@ class Notify(pgtrigger.Trigger):
             payload := '{{"app": "{model._meta.app_label}", "model": "{model.__name__}"}}'::jsonb;
             payload := jsonb_insert(payload, '{{old}}', COALESCE(to_jsonb(OLD), 'null'));
             payload := jsonb_insert(payload, '{{new}}', COALESCE(to_jsonb(NEW), 'null'));
-            SELECT current_setting('pgpubsub.get_payload_extras_func', True)
-                INTO get_payload_extras_func;
-            IF get_payload_extras_func IS NOT NULL THEN
-                EXECUTE 'SELECT ' || quote_ident(get_payload_extras_func) || '()'
-                    INTO extras;
-                payload := jsonb_insert(payload, '{{extras}}', extras);
-            END IF;
+            SELECT COALESCE(current_setting('pgpubsub.notification_context', True), '{{}}')::jsonb
+                INTO notification_context;
+            payload := jsonb_insert(payload, '{{context}}', notification_context);
         '''
 
 

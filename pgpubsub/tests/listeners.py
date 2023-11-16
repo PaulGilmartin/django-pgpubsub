@@ -40,12 +40,12 @@ def notify_post_owner(model_id: int, model_type: str, **kwargs):
 @atomic
 @pgpubsub.post_insert_listener(AuthorTriggerChannel)
 def create_first_post_for_author(
-        old: Author, new: Author, extras: Optional[Dict[str, Any]] = None
+        old: Author, new: Author, context: Optional[Dict[str, Any]] = None
 ):
     print(f'Creating first post for {new.name}')
     content = 'Welcome! This is your first post'
-    if extras and 'content' in extras:
-        content = extras.get('content')
+    if context and 'content' in context:
+        content = context.get('content')
     Post.objects.create(
         author_id=new.pk,
         content=content,
@@ -55,7 +55,7 @@ def create_first_post_for_author(
 
 @pgpubsub.post_insert_listener(AuthorTriggerChannel)
 def another_author_trigger(
-        old: Author, new: Author, extras: Optional[Dict[str, Any]] = None
+        old: Author, new: Author, context: Optional[Dict[str, Any]] = None
 ):
     print(f'Another author trigger')
 

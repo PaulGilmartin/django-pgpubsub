@@ -1,19 +1,19 @@
+import datetime
 import hashlib
+import inspect
+import json
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
 from decimal import Decimal
-import datetime
-import inspect
-import json
 from pydoc import locate
-from typing import Any, Callable, Dict, Optional, Union, List
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from django.apps import apps
 from django.conf import settings
 from django.core import serializers
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db import models
+from django.db import connection, connections, models
 
 
 registry = defaultdict(list)
@@ -144,18 +144,18 @@ class TriggerChannel(BaseChannel):
     model = NotImplementedError
     old: models.Model
     new: models.Model
-    extras: Optional[Dict[str, Any]] = None
+    context: Optional[Dict[str, Any]] = None
 
     @classmethod
-    def pass_extras_to_listeners(cls) -> bool:
-        return getattr(settings, 'PGPUBSUB_PASS_EXTRAS_TO_LISTENERS', False)
+    def pass_context_to_listeners(cls) -> bool:
+        return getattr(settings, 'PGPUBSUB_PASS_CONTEXT_TO_LISTENERS', False)
 
     @property
     def signature(self):
         return {
             k: v for k, v in self.__dict__.items()
             if k in self.__dataclass_fields__ and (
-                k != 'extras' or self.pass_extras_to_listeners()
+                k != 'context' or self.pass_context_to_listeners()
             )
         }
 
@@ -183,8 +183,8 @@ class TriggerChannel(BaseChannel):
         if new is not None:
             new = new.object
         fields = {'old': old, 'new': new}
-        if cls.pass_extras_to_listeners():
-            fields['extras'] = payload_dict.get('extras', {})
+        if cls.pass_context_to_listeners():
+            fields['context'] = payload_dict.get('context', {})
         return fields
 
     @classmethod
@@ -229,6 +229,20 @@ class TriggerChannel(BaseChannel):
                 serialized['fields'][pk.remote_field.model._meta.pk.name] = serialized['pk']
             model_data.append(serialized)
         return model_data
+
+
+def set_notification_context(
+    context: Dict[str, Any], using: Optional[str] = None
+) -> None:
+    if using:
+        conn = connections[using]
+    else:
+        conn = connection
+    with conn.cursor() as cursor:
+        cursor.execute(
+            "SET LOCAL pgpubsub.notification_context = %s",
+            (json.dumps(context),)
+        )
 
 
 def locate_channel(channel):
