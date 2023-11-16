@@ -67,7 +67,7 @@ equal to ``my-tenant`` in the payload's ``extras`` field.
 Pass ``extras`` field to the trigger listener callback
 ------------------------------------------------------
 
-To enable this set ``PGPUBSUB_PASS_EXTRAS_TO_LISTENERS`` to ``True`` in djago
+To enable this set ``PGPUBSUB_PASS_EXTRAS_TO_LISTENERS`` to ``True`` in django
 settings and add a ``extras`` parameter to the listener callback.
 
 .. code-block:: python

@@ -57,7 +57,9 @@ def test_payload_extras_are_added_if_enabled(
                 extras={'test_key': 'test-value'},
             )
     ):
-        Notification.set_payload_extras_builder('get_test_payload_extras', using=db)
+        Notification.set_payload_extras_builder(
+            'get_test_payload_extras', till_tx_end=True, using=db
+        )
         Media.objects.create(name='avatar.jpg', content_type='image/png', size=15000)
         stored_notification = Notification.from_channel(channel=MediaTriggerChannel).get()
         assert stored_notification.payload['extras'] == {'test_key': 'test-value'}
