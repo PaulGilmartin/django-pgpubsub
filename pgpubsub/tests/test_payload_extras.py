@@ -15,23 +15,6 @@ from pgpubsub.tests.channels import (
 )
 from pgpubsub.tests.models import Author, Media, Post
 
-@pytest.fixture(scope="session")
-def django_db_modify_db_settings():
-    is_multitenant = True
-    print(f"django_db_modify_db_settings: {is_multitenant=}")
-    if is_multitenant:
-        from django.conf import settings
-        settings.PGPUBSUB_ENABLE_PAYLOAD_EXTRAS = True
-
-"""
-@pytest.fixture
-def is_multitenant(request):
-    marks = [m.name for m in request.node.iter_markers()]
-    if request.node.parent:
-        marks += [m.name for m in request.node.parent.iter_markers()]
-    return 'multitenant' in marks
-    """
-
 
 @pytest.mark.multitenant
 @pytest.mark.django_db(transaction=True)
@@ -85,7 +68,7 @@ def test_payload_extras_are_added_if_enabled(
 
 
 @pytest.mark.django_db(transaction=True)
-def test_process_notifications_gets_all_by_default(pg_connection):
+def test_process_notifications_gets_all_notifications_by_default(pg_connection):
     Author.objects.create(name='no-filter')
     assert not Post.objects.exists()
     process_notifications(pg_connection)
@@ -99,10 +82,10 @@ class TestListenerFilterProvider(ListenerFilterProvider):
 
 
 @pytest.mark.django_db(transaction=True)
-def test_process_notifications_filters_out_unmatching_notifications(
+def test_process_notifications_filters_out_nonmatching_notifications(
         pg_connection, settings, configure_payload_extras
 ):
-    Author.objects.create(name='notmatching')
+    Author.objects.create(name='nonmatching')
     with (
             atomic(),
             configure_payload_extras(
@@ -117,11 +100,11 @@ def test_process_notifications_filters_out_unmatching_notifications(
     assert not Post.objects.exists()
     process_notifications(pg_connection)
     assert 1 == Post.objects.filter(author__name='matching').count()
-    assert 0 == Post.objects.filter(author__name='notmatching').count()
+    assert 0 == Post.objects.filter(author__name='nonmatching').count()
 
 
 @pytest.mark.django_db(transaction=True)
-def test_payload_extras_are_passed_to_listener_callback(
+def test_payload_extras_may_be_passed_to_listener_callback(
         pg_connection, settings, configure_payload_extras
 ):
     settings.PGPUBSUB_PASS_EXTRAS_TO_LISTENERS = True
