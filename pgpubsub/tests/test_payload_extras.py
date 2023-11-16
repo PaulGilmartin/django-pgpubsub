@@ -16,7 +16,6 @@ from pgpubsub.tests.channels import (
 from pgpubsub.tests.models import Author, Media, Post
 
 
-@pytest.mark.multitenant
 @pytest.mark.django_db(transaction=True)
 def test_payload_extras_are_not_added_by_default(pg_connection):
     Media.objects.create(name='avatar.jpg', content_type='image/png', size=15000)
