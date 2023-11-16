@@ -7,9 +7,10 @@ import datetime
 import inspect
 import json
 from pydoc import locate
-from typing import Callable, Dict, Union, List
+from typing import Any, Callable, Dict, Optional, Union, List
 
 from django.apps import apps
+from django.conf import settings
 from django.core import serializers
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
@@ -143,6 +144,20 @@ class TriggerChannel(BaseChannel):
     model = NotImplementedError
     old: models.Model
     new: models.Model
+    extras: Optional[Dict[str, Any]] = None
+
+    @classmethod
+    def pass_extras_to_listeners(cls) -> bool:
+        return getattr(settings, 'PGPUBSUB_PASS_EXTRAS_TO_LISTENERS', False)
+
+    @property
+    def signature(self):
+        return {
+            k: v for k, v in self.__dict__.items()
+            if k in self.__dataclass_fields__ and (
+                k != 'extras' or self.pass_extras_to_listeners()
+            )
+        }
 
     @classmethod
     def deserialize(cls, payload: Union[Dict, str]):
@@ -167,7 +182,10 @@ class TriggerChannel(BaseChannel):
         new = next(new_deserialized_objects, None)
         if new is not None:
             new = new.object
-        return {'old': old, 'new': new}
+        fields = {'old': old, 'new': new}
+        if cls.pass_extras_to_listeners():
+            fields['extras'] = payload_dict.get('extras', {})
+        return fields
 
     @classmethod
     def _build_model_serializer_data(cls, payload: Dict, state: str):

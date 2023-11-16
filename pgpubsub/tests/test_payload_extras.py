@@ -120,3 +120,23 @@ def test_process_notifications_filters_out_unmatching_notifications(
     assert 0 == Post.objects.filter(author__name='notmatching').count()
 
 
+@pytest.mark.django_db(transaction=True)
+def test_payload_extras_are_passed_to_listener_callback(
+        pg_connection, settings, configure_payload_extras
+):
+    settings.PGPUBSUB_PASS_EXTRAS_TO_LISTENERS = True
+    with (
+            atomic(),
+            configure_payload_extras(
+                func_name='get_test_payload_extras',
+                extras={'content': 'overriden content'},
+            )
+    ):
+        Notification.set_payload_extras_builder('get_test_payload_extras')
+        Author.objects.create(name='I like overrides')
+
+    assert not Post.objects.exists()
+    process_notifications(pg_connection)
+    post = Post.objects.all().first()
+    assert post is not None
+    assert post.content == 'overriden content'
