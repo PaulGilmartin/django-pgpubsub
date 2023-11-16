@@ -60,10 +60,13 @@ class Notification(models.Model):
         return cls.objects.filter(channel=channel.listen_safe_name())
 
     @classmethod
-    def set_payload_extras_builder(cls, func_name: str, using: Optional[str] = None) -> None:
+    def set_payload_extras_builder(
+        cls, func_name: str, till_tx_end: bool = False, using: Optional[str] = None
+    ) -> None:
         if using:
             conn = connections[using]
         else:
             conn = connection
+        scope = "LOCAL" if till_tx_end else "SESSION"
         with conn.cursor() as cursor:
-            cursor.execute("set local pgpubsub.get_payload_extras_func = %s", (func_name,))
+            cursor.execute(f"SET {scope} pgpubsub.get_payload_extras_func = %s", (func_name,))

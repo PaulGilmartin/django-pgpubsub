@@ -93,7 +93,9 @@ def test_process_notifications_filters_out_nonmatching_notifications(
                 extras={'test_key': 'test-value'},
             )
     ):
-        Notification.set_payload_extras_builder('get_test_payload_extras')
+        Notification.set_payload_extras_builder(
+            'get_test_payload_extras', till_tx_end=True
+        )
         Author.objects.create(name='matching')
 
     settings.PGPUBSUB_LISTENER_FILTER = 'pgpubsub.tests.test_payload_extras.TestListenerFilterProvider'
@@ -115,7 +117,9 @@ def test_payload_extras_may_be_passed_to_listener_callback(
                 extras={'content': 'overriden content'},
             )
     ):
-        Notification.set_payload_extras_builder('get_test_payload_extras')
+        Notification.set_payload_extras_builder(
+            'get_test_payload_extras', till_tx_end=True
+        )
         Author.objects.create(name='I like overrides')
 
     assert not Post.objects.exists()
