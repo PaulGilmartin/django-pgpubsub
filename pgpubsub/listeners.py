@@ -1,7 +1,8 @@
 from functools import wraps
-from typing import Union, Type
+from typing import Protocol, Type, Union
 
 import pgtrigger
+from django.db.models import Q
 from pgtrigger import Trigger, registered
 
 from pgpubsub.channel import (
@@ -100,3 +101,8 @@ def trigger_listener(channel: Union[Type[Channel], str], trigger: Trigger):
             return callback(*args, **kwargs)
         return wrapper
     return _trig_listener
+
+
+class ListenerFilterProvider(Protocol):
+    def get_filter(self) -> Q:
+        ...

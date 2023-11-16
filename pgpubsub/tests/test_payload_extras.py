@@ -8,6 +8,7 @@ from django.db import connections
 from django.db.models import Q
 from django.db.transaction import atomic
 from pgpubsub.listen import process_notifications
+from pgpubsub.listeners import ListenerFilterProvider
 from pgpubsub.models import Notification
 from pgpubsub.tests.channels import (
     MediaTriggerChannel,
@@ -90,6 +91,13 @@ def test_process_notifications_gets_all_by_default(pg_connection):
     process_notifications(pg_connection)
     assert 1 == Post.objects.filter(author__name='no-filter').count()
 
+
+class TestListenerFilterProvider(ListenerFilterProvider):
+    __test__ = False
+    def get_filter(self) -> Q:
+        return Q(payload__extras__test_key='test-value')
+
+
 @pytest.mark.django_db(transaction=True)
 def test_process_notifications_filters_out_unmatching_notifications(
         pg_connection, settings, configure_payload_extras
@@ -105,7 +113,7 @@ def test_process_notifications_filters_out_unmatching_notifications(
         Notification.set_payload_extras_builder('get_test_payload_extras')
         Author.objects.create(name='matching')
 
-    settings.PGPUBSUB_LISTENER_FILTER = Q(payload__extras__test_key='test-value')
+    settings.PGPUBSUB_LISTENER_FILTER = 'pgpubsub.tests.test_payload_extras.TestListenerFilterProvider'
     assert not Post.objects.exists()
     process_notifications(pg_connection)
     assert 1 == Post.objects.filter(author__name='matching').count()

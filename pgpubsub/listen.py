@@ -1,3 +1,4 @@
+import importlib
 import logging
 import multiprocessing
 import select
@@ -18,6 +19,7 @@ from pgpubsub.channel import (
     locate_channel,
     registry,
 )
+from pgpubsub.listeners import ListenerFilterProvider
 from pgpubsub.models import Notification
 
 logger = logging.getLogger(__name__)
@@ -155,6 +157,18 @@ class CastToJSONB(Func):
     template = '((%(expressions)s)::jsonb)'
 
 
+def get_extra_filter() -> Q:
+    extra_filter_provider_fq_name = getattr(settings, 'PGPUBSUB_LISTENER_FILTER', None)
+    if extra_filter_provider_fq_name:
+        module = importlib.import_module(
+            '.'.join(extra_filter_provider_fq_name.split('.')[:-1])
+        )
+        clazz = getattr(module, extra_filter_provider_fq_name.split('.')[-1])
+        extra_filter_provider: ListenerFilterProvider = clazz()
+        return extra_filter_provider.get_filter()
+    else:
+        return Q()
+
 class LockableNotificationProcessor(NotificationProcessor):
 
     def validate(self):
@@ -164,15 +178,16 @@ class LockableNotificationProcessor(NotificationProcessor):
     def process(self):
         logger.info(
             f'Processing notification for {self.channel_cls.name()}')
-        extras_filter = getattr(settings, 'PGPUBSUB_LISTENER_FILTER', None)
-        extras_filter = [extras_filter] if extras_filter else []
+        payload_filter = (
+            Q(payload=CastToJSONB(Value(self.notification.payload))) |
+            Q(payload=self.notification.payload)
+        )
+        payload_filter &= get_extra_filter()
         notification = (
             Notification.objects.select_for_update(
                 skip_locked=True).filter(
-                Q(payload=CastToJSONB(Value(self.notification.payload)))
-                    | Q(payload=self.notification.payload),
-                *extras_filter,
-                channel=self.notification.channel,
+                    payload_filter,
+                    channel=self.notification.channel,
             ).first()
         )
         if notification is None:
