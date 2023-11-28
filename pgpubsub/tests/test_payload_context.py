@@ -39,6 +39,20 @@ def test_notification_context_is_stored_in_payload(pg_connection, db):
     pg_connection.poll()
     assert 1 == len(pg_connection.notifies)
 
+@pytest.mark.parametrize("db", [None, "default"])
+@pytest.mark.django_db(transaction=True)
+def test_notification_context_is_cleared_after_transaction_end(pg_connection, db):
+    with atomic():
+        pgpubsub.set_notification_context({'test_key': 'test-value'}, using=db)
+
+    Media.objects.create(name='avatar.jpg', content_type='image/png', size=15000)
+
+    stored_notification = Notification.from_channel(channel=MediaTriggerChannel).get()
+    assert stored_notification.payload['context'] == {}
+
+    pg_connection.poll()
+    assert 1 == len(pg_connection.notifies)
+
 
 @pytest.mark.django_db(transaction=True)
 def test_process_notifications_gets_all_notifications_by_default(pg_connection):

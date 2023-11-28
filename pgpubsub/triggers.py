@@ -19,6 +19,7 @@ class Notify(pgtrigger.Trigger):
         return [
             ('payload', 'JSONB'),
             ('notification_context', 'JSONB'),
+            ('notification_context_text', 'TEXT'),
         ]
 
     def _pre_notify(self):
@@ -29,9 +30,11 @@ class Notify(pgtrigger.Trigger):
             payload := '{{"app": "{model._meta.app_label}", "model": "{model.__name__}"}}'::jsonb;
             payload := jsonb_insert(payload, '{{old}}', COALESCE(to_jsonb(OLD), 'null'));
             payload := jsonb_insert(payload, '{{new}}', COALESCE(to_jsonb(NEW), 'null'));
-            SELECT COALESCE(current_setting('pgpubsub.notification_context', True), '{{}}')::jsonb
-                INTO notification_context;
-            payload := jsonb_insert(payload, '{{context}}', notification_context);
+            SELECT current_setting('pgpubsub.notification_context', True) INTO notification_context_text;
+            IF COALESCE(notification_context_text, '') = '' THEN
+                notification_context_text := '{{}}';
+            END IF;
+            payload := jsonb_insert(payload, '{{context}}', notification_context_text::jsonb);
         '''
 
 
