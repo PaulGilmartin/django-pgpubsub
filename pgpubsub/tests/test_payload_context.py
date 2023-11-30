@@ -4,7 +4,7 @@ import os
 import pytest
 
 import pgpubsub
-from django.db import connections
+from django.db import connection, connections
 from django.db.models import Q
 from django.db.transaction import atomic
 from pgpubsub.listen import process_notifications
@@ -38,6 +38,18 @@ def test_notification_context_is_stored_in_payload(pg_connection, db):
 
     pg_connection.poll()
     assert 1 == len(pg_connection.notifies)
+
+
+def test_set_notification_context_is_noop_if_transaction_needs_rollback(db):
+    with atomic():
+        try:
+            with connection.cursor() as cur:
+                cur.execute("invalid sql")
+        except Exception:
+            pass
+        pgpubsub.set_notification_context({'test_key': 'test-value'})
+        connection.set_rollback(True)
+
 
 @pytest.mark.parametrize("db", [None, "default"])
 @pytest.mark.django_db(transaction=True)

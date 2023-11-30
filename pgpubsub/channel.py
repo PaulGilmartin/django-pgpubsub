@@ -14,6 +14,7 @@ from django.conf import settings
 from django.core import serializers
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import connection, connections, models
+from django.db.utils import InternalError
 
 
 registry = defaultdict(list)
@@ -231,6 +232,10 @@ class TriggerChannel(BaseChannel):
         return model_data
 
 
+TX_ABORTED_ERROR_MESSAGE = (
+    'current transaction is aborted, commands ignored until end of transaction block'
+)
+
 def set_notification_context(
     context: Dict[str, Any], using: Optional[str] = None
 ) -> None:
@@ -239,10 +244,16 @@ def set_notification_context(
     else:
         conn = connection
     with conn.cursor() as cursor:
-        cursor.execute(
-            "SET LOCAL pgpubsub.notification_context = %s",
-            (json.dumps(context),)
-        )
+        try:
+            cursor.execute(
+                "SET LOCAL pgpubsub.notification_context = %s",
+                (json.dumps(context),)
+            )
+        except InternalError as e:
+            if TX_ABORTED_ERROR_MESSAGE in str(e):
+                return
+            else:
+                raise
 
 
 def locate_channel(channel):
