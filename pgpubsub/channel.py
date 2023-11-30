@@ -243,6 +243,8 @@ def set_notification_context(
         conn = connections[using]
     else:
         conn = connection
+    if conn.needs_rollback:
+        return
     with conn.cursor() as cursor:
         try:
             cursor.execute(

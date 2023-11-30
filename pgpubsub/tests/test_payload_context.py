@@ -7,6 +7,7 @@ import pgpubsub
 from django.db import connection, connections
 from django.db.models import Q
 from django.db.transaction import atomic
+from django.db.utils import IntegrityError
 from pgpubsub.listen import process_notifications
 from pgpubsub.listeners import ListenerFilterProvider
 from pgpubsub.models import Notification
@@ -42,15 +43,29 @@ def test_notification_context_is_stored_in_payload(pg_connection, db):
     assert 1 == len(pg_connection.notifies)
 
 
-def test_set_notification_context_is_noop_if_transaction_needs_rollback(db):
+def test_set_notification_context_is_noop_if_there_was_error_in_transaction(db):
+    def execute_some_errorneous_statement():
+        with connection.cursor() as cur:
+            cur.execute("invalid sql")
+
     with atomic():
         try:
-            with connection.cursor() as cur:
-                cur.execute("invalid sql")
+            execute_some_errorneous_statement()
         except Exception:
             pass
         pgpubsub.set_notification_context({'test_key': 'test-value'})
-        connection.set_rollback(True)
+        connection.set_rollback(True)  # need this to rollback as commit would fail
+
+def test_set_notification_context_is_noop_if_transaction_needs_rollback(db):
+    def emulate_db_error_handling_in_django():
+        # In many use cases in django the low level DB exception is handled
+        # and the fact that it happened is recorded on the connection with
+        # needs_rollback
+        connection.needs_rollback = True
+
+    with atomic():
+        emulate_db_error_handling_in_django()
+        pgpubsub.set_notification_context({'test_key': 'test-value'})
 
 
 @pytest.mark.parametrize("db", [None, "default"])
