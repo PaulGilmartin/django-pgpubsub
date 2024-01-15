@@ -20,6 +20,7 @@ Table of Contents
    notifications
    exactly_once_messaging
    recovery
+   metrics
 
 
 .. toctree::
