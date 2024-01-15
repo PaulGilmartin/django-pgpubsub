@@ -86,3 +86,47 @@ and ``NEW`` values available in the postgres ``CREATE TRIGGER`` statement
 (https://www.postgresql.org/docs/9.1/sql-createtrigger.html). The only custom
 logic we need to define on a trigger channel is the ``model`` class-level
 attribute.
+
+
+Model Migrations
+----------------------------
+
+Note that the payload captures the snapshot of the ``Author`` instance for some
+time. Later it will be deserialized (see more about this below in the
+Listeners section). It may happen that by that time the ``Author`` model is
+migrated in django and this requires careful handling to make sure the payload
+can still be deserialized and processed. Special handling is required when the
+migration is backward incompatible like making existing field mandatory.
+
+Let's look to the example how to do that and what tooling ``pgpubsub`` provides
+to facilitate that. Let's says we want to add a new mandatory text field
+``email`` to ``Author``.
+
+This is done in three steps (releases):
+
+1. New optional field is added. Application is modified so that new records
+   always get a value in ``email`` field.
+2. Values are populated in the existing records.
+3. Fields is made mandatory.
+
+Note that before release 2 is deployed and the migration that populates the
+field is applied modifications to some ``Author`` entities would produce
+payloads that do not have value in the ``email`` field.
+
+When release 3 is deployed the application may assume that every ``Author`` has
+``email``. The problem is that the notifications produced before release 2 is
+deployed may be still not processed (for example the listener process was not
+run or there was an issue with the processing of some specific notification and
+it was skipped). In order to safely deploy release 3 the deployer need to know
+if there are any notifications that were created before django migrations of
+the release 2 were applied.
+
+To facilitate this ``Notification`` entity stores ``db_version`` field which
+contains the latest migration identier for the django app the ``Author`` is
+defined in. The deployer may check if there are any notifications with the old
+``db_version`` before deploying version that potentially breaks backward
+compatibility in terms of the data structure.
+
+In this case deployer should check that there are no ``Notification`` entities
+with ``db_version`` before the version that was assigned to the migrations in
+release 2.
