@@ -4,7 +4,6 @@ from django.core.management import BaseCommand
 from django.db import connection
 
 from pgpubsub.listen import listen
-from pgpubsub.metrics import configure_monitoring
 
 
 class Command(BaseCommand):
@@ -36,7 +35,6 @@ class Command(BaseCommand):
         recover = options.get('recover', False)
         multiprocessing.set_start_method('fork', force=True)
         connection.close()
-        configure_monitoring()
         for i in range(processes):
             process = multiprocessing.Process(
                 name=f'pgpubsub_process_{i}',
