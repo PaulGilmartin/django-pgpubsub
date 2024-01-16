@@ -3,7 +3,7 @@ import multiprocessing
 from django.core.management import BaseCommand
 from django.db import connection
 
-from pgpubsub.listen import listen
+from pgpubsub.listen import listen, start_listen_in_a_process
 
 
 class Command(BaseCommand):
@@ -22,6 +22,32 @@ class Command(BaseCommand):
             dest='processes',
         )
         parser.add_argument(
+            '--worker',
+            action='store_true',
+            dest='worker',
+            default=False,
+            help='Start a worker listener process.',
+        )
+        parser.add_argument(
+            '--worker-start-method',
+            type=str,
+            dest='worker_start_method',
+            default="spawn",
+            help=(
+                "A method ('spawn', 'fork') used to start a worker "
+                "listener process. 'fork' is the quickest on POSIX systems but unsafe "
+                "if other threads are started during django initialization and/or from "
+                "the listener callbacks.",
+            ),
+        )
+        parser.add_argument(
+            '--autorestart-on-failure',
+            action='store_true',
+            dest='autorestart_on_failure',
+            default=True,
+            help='Automatically restart a worker listener process on a failure.',
+        )
+        parser.add_argument(
             '--recover',
             action='store_true',
             dest='recover',
@@ -33,12 +59,21 @@ class Command(BaseCommand):
         channel_names = options.get('channels')
         processes = options.get('processes') or 1
         recover = options.get('recover', False)
-        multiprocessing.set_start_method('fork', force=True)
-        connection.close()
-        for i in range(processes):
-            process = multiprocessing.Process(
-                name=f'pgpubsub_process_{i}',
-                target=listen,
-                args=(channel_names, recover),
+        worker = options.get('worker', False)
+        worker_start_method = options.get('worker_start_method')
+        autorestart_on_failure = options.get('autorestart_on_failure', True)
+        if worker:
+            listen(
+                channel_names,
+                recover,
+                autorestart_on_failure,
+                start_method=worker_start_method,
             )
-            process.start()
+        else:
+            for i in range(processes):
+                start_listen_in_a_process(
+                    channel_names, recover,
+                    autorestart_on_failure,
+                    start_method=worker_start_method,
+                    name=f'pgpubsub_process_{i}',
+                )
