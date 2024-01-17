@@ -63,6 +63,10 @@ class Command(BaseCommand):
         worker_start_method = options.get('worker_start_method')
         autorestart_on_failure = options.get('autorestart_on_failure', True)
         if worker:
+            if processes > 1:
+                raise ValueError(
+                    f'Only 1 process is allowed with --worker option. Found {processes}'
+                )
             listen(
                 channel_names,
                 recover,

@@ -41,10 +41,10 @@ def start_listen_in_a_process(
             process = multiprocessing.Process(
                 name=name,
                 target=listen,
-                args=(channels, recover, autorestart_on_failure),
+                args=(channels, recover, autorestart_on_failure, 'fork'),
             )
         case 'spawn':
-            args = [sys.argv[0], 'listen', '--worker', '--worker-start-method', start_method]
+            args = [sys.argv[0], 'listen', '--worker', '--worker-start-method', 'spawn']
             if recover:
                 args.append('--recover')
             if autorestart_on_failure:
