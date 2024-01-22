@@ -41,11 +41,11 @@ class Command(BaseCommand):
             ),
         )
         parser.add_argument(
-            '--autorestart-on-failure',
+            '--no-restart-on-failure',
             action='store_true',
-            dest='autorestart_on_failure',
-            default=True,
-            help='Automatically restart a worker listener process on a failure.',
+            dest='no_restart_on_failure',
+            default=False,
+            help='Do not automatically restart a worker listener process on a failure.',
         )
         parser.add_argument(
             '--recover',
@@ -61,7 +61,7 @@ class Command(BaseCommand):
         recover = options.get('recover', False)
         worker = options.get('worker', False)
         worker_start_method = options.get('worker_start_method')
-        autorestart_on_failure = options.get('autorestart_on_failure', True)
+        autorestart_on_failure = not options.get('no_restart_on_failure')
         if worker:
             if processes > 1:
                 raise ValueError(

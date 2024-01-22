@@ -47,8 +47,8 @@ def start_listen_in_a_process(
             args = [sys.argv[0], 'listen', '--worker', '--worker-start-method', 'spawn']
             if recover:
                 args.append('--recover')
-            if autorestart_on_failure:
-                args.append('--autorestart-on-failure')
+            if not autorestart_on_failure:
+                args.append('--no-restart-on-failure')
             if channels:
                 args.extend(channels)
             logger.debug(f'  with {args=}')
