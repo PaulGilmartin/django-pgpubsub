@@ -14,7 +14,12 @@ will automatically spin up a secondary process to continue listening before the
 exception ends the initial process. This means that we do not have to worry about
 restarting our listening processes any time a listener incurs a python level exception.
 
-The ``listen`` command accepts three optional arguments:
+In some cases this might be not needed or desired e.g. when the listener is already run
+in the environment that monitors and restarts the process on a failure (e.g. as part of
+k8s deployment). In this case two additional options may be used namely ``--worker``
+and ``--no-restart-on-failure``.
+
+The ``listen`` command accepts several optional arguments:
 
 * ``--channels``: a space separated list of the
   full module paths of the channels we wish to listen to.
@@ -27,9 +32,9 @@ The ``listen`` command accepts three optional arguments:
     ./manage.py listen --channels 'pgpubsub.tests.channels.PostReads'
 
 
-* ``--processes``: an integer which denotes the number of concurrent processes
+* ``--processes``: an integer which denotes the number of concurrent worker processes
   we wish to dedicate to listening to the specified channels. When no value is
-  supplied, we default to using a single process. Note that if multiple processes
+  supplied, we default to using a single worker process. Note that if multiple processes
   are listening to the same channel then by default both processes will act on
   each notification. To prevent this and have each notification be acted upon
   by exactly one listening process, we need to add ``lock_notifications = True``
@@ -40,8 +45,25 @@ The ``listen`` command accepts three optional arguments:
   we process notifications of all registered channels with ``lock_notifications=True``.
   See the :ref:`recovery` section for more.
 
-Here's an example of using all three options in one command:
+* ``--worker``: when supplied a single process that listens and processed notifications
+  is run. This option cannot be used together with ``--processes`` option.
+
+* ``--no-restart-on-failure``: when supplied a failure in the listener worker process
+  will not cause automatic process restart. This is useful mainly when ``--worker``
+  option is used. This can be used for the master process that is combined with
+  ``--processes`` as well but it makes little sense as on the error in the child worker
+  process it will not be restarted.
+
+Here's an example of using options in one command to run two processes that would
+automatically recover on failure:
 
 .. code-block::
 
     ./manage.py listen --channels 'pgpubsub.tests.channels.AuthorTriggerChannel' --processes 2 --recover
+
+Here's an example of using options in one command to run a process that wouldn't
+automatically restart on failure:
+
+.. code-block::
+
+    ./manage.py listen --channels 'pgpubsub.tests.channels.AuthorTriggerChannel' --worker --recover --no-restart-on-failure
