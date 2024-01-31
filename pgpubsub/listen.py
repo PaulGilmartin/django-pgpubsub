@@ -2,7 +2,7 @@ import logging
 import multiprocessing
 import select
 import sys
-from typing import List, Union
+from typing import List, Optional, Union
 
 from django.core.management import execute_from_command_line
 from django.db import connection, transaction
@@ -28,35 +28,34 @@ def start_listen_in_a_process(
     recover: bool = False,
     autorestart_on_failure: bool = True,
     start_method: str = 'spawn',
-    name: str | None = None,
+    name: Optional[str] = None,
 ) -> multiprocessing.Process:
     connection.close()
     multiprocessing.set_start_method(start_method, force=True)
     logger.info('Restarting process')
     if channels:
         channels = [c if isinstance(str, c) else c.name() for c in channels]
-    match start_method:
-        case 'fork':
-            logger.debug('  using fork')
-            process = multiprocessing.Process(
-                name=name,
-                target=listen,
-                args=(channels, recover, autorestart_on_failure, 'fork'),
-            )
-        case 'spawn':
-            args = [sys.argv[0], 'listen', '--worker', '--worker-start-method', 'spawn']
-            if recover:
-                args.append('--recover')
-            if not autorestart_on_failure:
-                args.append('--no-restart-on-failure')
-            if channels:
-                args.extend(channels)
-            logger.debug(f'  with {args=}')
-            process = multiprocessing.Process(
-                name=name, target=execute_from_command_line, args=(args, )
-            )
-        case _:
-            raise ValueError(f'Unsupported start method {start_method}')
+    if start_method == 'fork':
+        logger.debug('  using fork')
+        process = multiprocessing.Process(
+            name=name,
+            target=listen,
+            args=(channels, recover, autorestart_on_failure, 'fork'),
+        )
+    elif start_method == 'spawn':
+        args = [sys.argv[0], 'listen', '--worker', '--worker-start-method', 'spawn']
+        if recover:
+            args.append('--recover')
+        if not autorestart_on_failure:
+            args.append('--no-restart-on-failure')
+        if channels:
+            args.extend(channels)
+        logger.debug(f'  with {args=}')
+        process = multiprocessing.Process(
+            name=name, target=execute_from_command_line, args=(args, )
+        )
+    else:
+        raise ValueError(f'Unsupported start method {start_method}')
 
     process.start()
     return process
