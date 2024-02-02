@@ -62,10 +62,11 @@ def another_author_trigger(
 
 @pgpubsub.post_delete_listener(PostTriggerChannel)
 def email_author(old: Post, new: Post):
-    author = Author.objects.get(pk=old.author_id)
-    print(f'Emailing {author.name} to inform then post '
-          f'{old.pk} has been deleted.')
-    email(author)
+    if old and old.author_id:
+        author = Author.objects.get(pk=old.author_id)
+        print(f'Emailing {author.name} to inform then post '
+            f'{old.pk} has been deleted.')
+        email(author)
 
 
 def email(author: Author):

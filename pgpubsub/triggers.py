@@ -10,19 +10,20 @@ class Notify(pgtrigger.Trigger):
     def get_func(self, model: Type[Model]):
         return f'''
             {self._build_payload(model)}
-            {self._pre_notify()}
-            perform pg_notify('{self.name}', payload::text);
+            {self._build_notify_payload()}
+            perform pg_notify('{self.name}', notify_payload);
             RETURN NEW;
         '''
 
     def get_declare(self, model: Type[Model]):
         return [
+            ('notify_payload', 'TEXT'),
             ('payload', 'JSONB'),
             ('notification_context_text', 'TEXT'),
         ]
 
-    def _pre_notify(self):
-        return ''
+    def _build_notify_payload(self):
+        return 'notify_payload := payload;'
 
     def _build_payload(self, model):
         return f'''
@@ -38,8 +39,9 @@ class Notify(pgtrigger.Trigger):
 
 
 class LockableNotify(Notify):
-    def _pre_notify(self):
+    def _build_notify_payload(self):
         return f'''
             INSERT INTO pgpubsub_notification (channel, payload)
-            VALUES ('{self.name}', payload);
+            VALUES ('{self.name}', payload)
+            RETURNING id::text INTO notify_payload;
         '''

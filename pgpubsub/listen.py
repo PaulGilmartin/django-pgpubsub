@@ -119,6 +119,7 @@ def process_notifications(pg_connection):
         with transaction.atomic():
             for processor in [
                 NotificationProcessor,
+                FullPayloadLockableNotificationProcessor,  # for backward compatibility
                 LockableNotificationProcessor,
                 NotificationRecoveryProcessor,
             ]:
@@ -169,10 +170,22 @@ def get_extra_filter() -> Q:
     else:
         return Q()
 
-class LockableNotificationProcessor(NotificationProcessor):
+
+def is_int(val: str) -> bool:
+    try:
+        int(val)
+    except ValueError:
+        return False
+    else:
+        return True
+
+
+# This is kept for backward compatibility for the migration phase when old notifications
+# are still around. This should be removed after the transition phase.
+class FullPayloadLockableNotificationProcessor(NotificationProcessor):
 
     def validate(self):
-        if self.notification.payload == '':
+        if self.notification.payload == '' or is_int(self.notification.payload):
             raise InvalidNotificationProcessor
 
     def process(self):
@@ -187,6 +200,32 @@ class LockableNotificationProcessor(NotificationProcessor):
             Notification.objects.select_for_update(
                 skip_locked=True).filter(
                     payload_filter,
+                    channel=self.notification.channel,
+            ).first()
+        )
+        if notification is None:
+            logger.info(f'Could not obtain a lock on notification '
+                        f'{self.notification.pid}\n')
+        else:
+            logger.info(f'Obtained lock on {notification}')
+            self.notification = notification
+            self._execute()
+            self.notification.delete()
+
+
+class LockableNotificationProcessor(NotificationProcessor):
+
+    def validate(self):
+        if self.notification.payload == '' or not is_int(self.notification.payload):
+            raise InvalidNotificationProcessor
+
+    def process(self):
+        logger.info(
+            f'Processing notification for {self.channel_cls.name()}')
+        notification = (
+            Notification.objects.select_for_update(
+                skip_locked=True).filter(
+                    Q(id=int(self.notification.payload)) & get_extra_filter(),
                     channel=self.notification.channel,
             ).first()
         )
