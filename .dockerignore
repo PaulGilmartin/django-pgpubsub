@@ -1,0 +1,7 @@
+.venv
+.db
+.tox
+.pytest_cache
+.git
+tags
+docs/_build
