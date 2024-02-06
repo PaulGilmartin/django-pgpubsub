@@ -9,6 +9,7 @@ INSTALLED_APPS = [
     'pgpubsub.tests',
     'pgtrigger',
 ]
+
 # Database url comes from the DATABASE_URL env var
 DATABASES = {'default': dj_database_url.config()}
 DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = False
