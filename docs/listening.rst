@@ -45,6 +45,10 @@ The ``listen`` command accepts several optional arguments:
   we process notifications of all registered channels with ``lock_notifications=True``.
   See the :ref:`recovery` section for more.
 
+* ``--loglevel``: when supplied, it sets the log level. The default is 'info'.
+
+* ``--logformat``: when supplied, it sets the logger format using format syntax for python logging.
+
 * ``--worker``: when supplied a single process that listens and processed notifications
   is run. This option cannot be used together with ``--processes`` option.
 
@@ -63,7 +67,7 @@ automatically recover on failure:
 
 .. code-block::
 
-    ./manage.py listen --channels 'pgpubsub.tests.channels.AuthorTriggerChannel' --processes 2 --recover
+    ./manage.py listen --channels 'pgpubsub.tests.channels.AuthorTriggerChannel' --processes 2 --recover --loglevel debug --logformat '%(asctime)s %(message)s'
 
 Here's an example of using options in one command to run a process that wouldn't
 automatically restart on failure:
