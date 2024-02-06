@@ -1,0 +1,13 @@
+FROM alpine
+
+RUN apk --update add --no-cache build-base python3 python3-dev libpq-dev py3-pip postgresql gcc libffi-dev
+WORKDIR /app
+COPY . /app
+COPY ./pyproject.toml /app
+
+RUN python3 -m venv /usr/.venv && source /usr/.venv/bin/activate && pip install poetry && poetry config virtualenvs.create false && poetry update && poetry install
+
+ENV PYTHONPATH=${PYTHONPATH}:/usr/.venv/bin
+ENV PATH=/usr/.venv/bin:${PATH}
+
+ENTRYPOINT [ "./manage.py", "listen"]
