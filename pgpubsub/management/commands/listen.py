@@ -1,3 +1,4 @@
+import logging
 import multiprocessing
 
 from django.core.management import BaseCommand
@@ -28,8 +29,21 @@ class Command(BaseCommand):
             default=False,
             help='Process all stored notifications for selected channels.',
         )
+        parser.add_argument(
+            "--loglevel",
+            default="info",
+            help="Provide logging level. Example --loglevel debug, default=info",
+        )
+        parser.add_argument(
+            "--logformat",
+            default="%(asctime)s %(levelname).4s %(message)s",
+            help="Provide logging format. Example --logformat '%(asctime)s %(levelname)s %(message)s'",
+        )
 
     def handle(self, *args, **options):
+        logging.basicConfig(
+            format=options.get("logformat"), level=options.get("loglevel").upper()
+        )
         channel_names = options.get('channels')
         processes = options.get('processes') or 1
         recover = options.get('recover', False)

@@ -14,7 +14,7 @@ will automatically spin up a secondary process to continue listening before the
 exception ends the initial process. This means that we do not have to worry about
 restarting our listening processes any time a listener incurs a python level exception.
 
-The ``listen`` command accepts three optional arguments:
+The ``listen`` command accepts several optional arguments:
 
 * ``--channels``: a space separated list of the
   full module paths of the channels we wish to listen to.
@@ -40,8 +40,12 @@ The ``listen`` command accepts three optional arguments:
   we process notifications of all registered channels with ``lock_notifications=True``.
   See the :ref:`recovery` section for more.
 
-Here's an example of using all three options in one command:
+* ``--loglevel``: when supplied, it sets the log level. The default is 'info'.
+
+* ``--logformat``: when supplied, it sets the logger format using format syntax for python logging.
+
+Here's an example of using all options in one command:
 
 .. code-block::
 
-    ./manage.py listen --channels 'pgpubsub.tests.channels.AuthorTriggerChannel' --processes 2 --recover
+    ./manage.py listen --channels 'pgpubsub.tests.channels.AuthorTriggerChannel' --processes 2 --recover --loglevel debug --logformat '%(asctime)s %(message)s'
