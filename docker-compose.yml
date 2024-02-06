@@ -1,5 +1,5 @@
 version: "3.3"
-   
+
 services:
   db:
     image: postgres:13
@@ -10,8 +10,15 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
   app:
-    image: opus10/circleci-public-django-app
-    environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/postgres
+    build:
+      context: .
+      dockerfile: ./Dockerfile.dev
+    container_name: django-pgpubsub-app
     depends_on:
       - db
+    stdin_open: true
+    tty: true
+    environment:
+      - DJANGO_SETTINGS_MODULE=settings
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/postgres

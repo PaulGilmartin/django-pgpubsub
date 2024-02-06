@@ -126,6 +126,18 @@ Additionally, if we wish to run the ``pgpubsub`` tests, we need to add
 ``pgpubsub.tests`` into ``INSTALLED_APPS`` too.
 
 
+Developing and Contributing
+---------------------------
+
+If you would like to contribute to this library, you can spin up a development environment
+by running ``docker compose up``.
+This will create two containers, one with a postgres database and one with a
+django application running the ``manage.py listen`` command.
+You can then run the tests by running ``docker compose exec app pytest``.
+Alternatively, if you want to run tests on Pycharm, you should override the ``entrypoint``
+in the ``app`` service of ``docker-compose.yml`` to be ``''``.
+
+
 Minimal Example
 ===============
 
