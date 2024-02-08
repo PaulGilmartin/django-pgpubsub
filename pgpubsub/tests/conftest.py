@@ -1,6 +1,6 @@
 import pytest
 from django.db import connection
-from pgpubsub.listen import  listen_to_channels
+from pgpubsub.listen import listen_to_channels
 
 @pytest.fixture()
 def pg_connection():

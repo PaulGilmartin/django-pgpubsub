@@ -208,9 +208,10 @@ class NotificationRecoveryProcessor(LockableNotificationProcessor):
 
     def process(self):
         logger.info(f'Processing all notifications for channel {self.channel_cls.name()} \n')
+        payload_filter = Q(channel=self.notification.channel) & get_extra_filter()
         notifications = (
             Notification.objects.select_for_update(
-                skip_locked=True).filter(channel=self.notification.channel).iterator()
+                skip_locked=True).filter(payload_filter).iterator()
         )
         logger.info(f'Found notifications: {notifications}')
         for notification in notifications:

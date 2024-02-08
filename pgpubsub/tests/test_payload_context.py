@@ -10,9 +10,11 @@ from django.db.transaction import atomic
 from pgpubsub.listen import process_notifications
 from pgpubsub.listeners import ListenerFilterProvider
 from pgpubsub.models import Notification
+from pgpubsub.notify import process_stored_notifications
 from pgpubsub.tests.channels import (
     MediaTriggerChannel,
 )
+from pgpubsub.tests.connection import simulate_listener_does_not_receive_notifications
 from pgpubsub.tests.models import Author, Media, Post
 
 
@@ -91,6 +93,25 @@ def test_process_notifications_filters_out_nonmatching_notifications(
 
     settings.PGPUBSUB_LISTENER_FILTER = 'pgpubsub.tests.test_payload_context.TestListenerFilterProvider'
     assert not Post.objects.exists()
+    process_notifications(pg_connection)
+    assert 1 == Post.objects.filter(author__name='matching').count()
+    assert 0 == Post.objects.filter(author__name='nonmatching').count()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_process_notifications_recovery_filters_out_nonmatching_notifications(
+    pg_connection, settings
+):
+    Author.objects.create(name='nonmatching')
+    with atomic():
+        pgpubsub.set_notification_context({'test_key': 'test-value'})
+        Author.objects.create(name='matching')
+
+    settings.PGPUBSUB_LISTENER_FILTER = 'pgpubsub.tests.test_payload_context.TestListenerFilterProvider'
+    assert not Post.objects.exists()
+
+    simulate_listener_does_not_receive_notifications(pg_connection)
+    process_stored_notifications()
     process_notifications(pg_connection)
     assert 1 == Post.objects.filter(author__name='matching').count()
     assert 0 == Post.objects.filter(author__name='nonmatching').count()

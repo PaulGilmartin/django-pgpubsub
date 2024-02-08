@@ -16,6 +16,7 @@ from pgpubsub.tests.channels import (
     AuthorTriggerChannel,
     MediaTriggerChannel,
 )
+from pgpubsub.tests.connection import simulate_listener_does_not_receive_notifications
 from pgpubsub.tests.listeners import post_reads_per_date_cache
 from pgpubsub.tests.models import Author, Media, Post
 
@@ -117,12 +118,6 @@ def test_author_bulk_insert_notify(pg_connection):
     assert [author.pk for author in authors] == list(post_authors)
 
 
-def _simulate_listener_does_not_receive_notifications(pg_connection):
-    pg_connection.notifies = []
-    pg_connection.poll()
-    assert 0 == len(pg_connection.notifies)
-
-
 @pytest.mark.django_db(transaction=True)
 def test_process_stored_notifications(pg_connection):
     Author.objects.create(name='Billy')
@@ -130,7 +125,7 @@ def test_process_stored_notifications(pg_connection):
     assert 2 == len(pg_connection.notifies)
     assert 2 == Notification.objects.count()
     assert 0 == Post.objects.count()
-    _simulate_listener_does_not_receive_notifications(pg_connection)
+    simulate_listener_does_not_receive_notifications(pg_connection)
     process_stored_notifications()
     pg_connection.poll()
     # One notification for each lockable channel
@@ -148,7 +143,7 @@ def test_recover_notifications(pg_connection):
     assert 2 == len(pg_connection.notifies)
     assert 2 == Notification.objects.count()
     assert 0 == Post.objects.count()
-    _simulate_listener_does_not_receive_notifications(pg_connection)
+    simulate_listener_does_not_receive_notifications(pg_connection)
     with patch('pgpubsub.listen.POLL', False):
         listen(recover=True)
     pg_connection.poll()
@@ -164,7 +159,7 @@ def test_recover_multiple_notifications(pg_connection):
     assert ENTITIES_COUNT == len(pg_connection.notifies)
     assert ENTITIES_COUNT == Notification.objects.count()
     assert 0 == Post.objects.count()
-    _simulate_listener_does_not_receive_notifications(pg_connection)
+    simulate_listener_does_not_receive_notifications(pg_connection)
     with patch('pgpubsub.listen.POLL', False):
         listen(recover=True)
     pg_connection.poll()
@@ -191,7 +186,7 @@ def test_recover_notifications_after_exception(pg_connection):
     assert 3 == Notification.objects.count()
     assert 0 == Post.objects.count()
 
-    _simulate_listener_does_not_receive_notifications(pg_connection)
+    simulate_listener_does_not_receive_notifications(pg_connection)
     with patch('pgpubsub.listen.POLL', False):
         listen(recover=True)
     pg_connection.poll()
@@ -218,7 +213,7 @@ def test_recover_multiple_notifications_after_exception(pg_connection):
     assert GOOD_COUNT + BROKEN_COUNT == Notification.objects.count()
     assert 0 == Post.objects.count()
 
-    _simulate_listener_does_not_receive_notifications(pg_connection)
+    simulate_listener_does_not_receive_notifications(pg_connection)
     with patch('pgpubsub.listen.POLL', False):
         listen(recover=True)
     pg_connection.poll()
