@@ -29,11 +29,41 @@ def test_empty_notification_context_is_stored_in_payload_by_default(pg_connectio
     assert 1 == len(pg_connection.notifies)
 
 
-@pytest.mark.parametrize("db", [None, "default"])
+@pytest.fixture
+def clear_notification_context():
+    yield
+    pgpubsub.set_notification_context({})
+
+
+@pytest.mark.parametrize("db_alias", [None, "default"])
+@pytest.mark.parametrize("tx_bound_context", [None, False])
 @pytest.mark.django_db(transaction=True)
-def test_notification_context_is_stored_in_payload(pg_connection, db):
+def test_notification_context_is_stored_in_payload(
+    pg_connection, settings, db_alias, tx_bound_context, clear_notification_context
+):
+    if tx_bound_context is None:
+        delattr(settings, 'PGPUBSUB_TX_BOUND_NOTIFICATION_CONTEXT')
+    else:
+        settings.PGPUBSUB_TX_BOUND_NOTIFICATION_CONTEXT = tx_bound_context
+
+    pgpubsub.set_notification_context({'test_key': 'test-value'},
+                                        using=db_alias)
+    Media.objects.create(name='avatar.jpg', content_type='image/png', size=15000)
+
+    stored_notification = Notification.from_channel(channel=MediaTriggerChannel).get()
+    assert stored_notification.payload['context'] == {'test_key': 'test-value'}
+
+    pg_connection.poll()
+    assert 1 == len(pg_connection.notifies)
+
+
+@pytest.mark.parametrize("db_alias", [None, "default"])
+@pytest.mark.django_db(transaction=True)
+def test_tx_bound_notification_context_is_stored_in_payload(pg_connection, settings, db_alias):
+    settings.PGPUBSUB_TX_BOUND_NOTIFICATION_CONTEXT = True
     with atomic():
-        pgpubsub.set_notification_context({'test_key': 'test-value'}, using=db)
+        pgpubsub.set_notification_context({'test_key': 'test-value'},
+                                          using=db_alias)
         Media.objects.create(name='avatar.jpg', content_type='image/png', size=15000)
 
     stored_notification = Notification.from_channel(channel=MediaTriggerChannel).get()
@@ -43,11 +73,24 @@ def test_notification_context_is_stored_in_payload(pg_connection, db):
     assert 1 == len(pg_connection.notifies)
 
 
-def test_set_notification_context_is_noop_if_there_was_error_in_transaction(db):
+@pytest.mark.django_db(transaction=True)
+def test_set_notification_context_raises_outside_of_tx_if_tx_bound_context_is_used(
+    settings
+):
+    settings.PGPUBSUB_TX_BOUND_NOTIFICATION_CONTEXT = True
+
+    with pytest.raises(RuntimeError):
+        pgpubsub.set_notification_context({'test_key': 'test-value'})
+
+
+def test_set_notification_context_is_noop_if_there_was_error_in_transaction(
+        db, settings
+):
     def execute_some_errorneous_statement():
         with connection.cursor() as cur:
             cur.execute("invalid sql")
 
+    settings.PGPUBSUB_TX_BOUND_NOTIFICATION_CONTEXT = True
     with atomic():
         try:
             execute_some_errorneous_statement()
@@ -56,13 +99,14 @@ def test_set_notification_context_is_noop_if_there_was_error_in_transaction(db):
         pgpubsub.set_notification_context({'test_key': 'test-value'})
         connection.set_rollback(True)  # need this to rollback as commit would fail
 
-def test_set_notification_context_is_noop_if_transaction_needs_rollback(db):
+def test_set_notification_context_is_noop_if_transaction_needs_rollback(db, settings):
     def emulate_db_error_handling_in_django():
         # In many use cases in django the low level DB exception is handled
         # and the fact that it happened is recorded on the connection with
         # needs_rollback
         connection.needs_rollback = True
 
+    settings.PGPUBSUB_TX_BOUND_NOTIFICATION_CONTEXT = True
     with atomic():
         emulate_db_error_handling_in_django()
         pgpubsub.set_notification_context({'test_key': 'test-value'})
@@ -70,7 +114,10 @@ def test_set_notification_context_is_noop_if_transaction_needs_rollback(db):
 
 @pytest.mark.parametrize("db", [None, "default"])
 @pytest.mark.django_db(transaction=True)
-def test_notification_context_is_cleared_after_transaction_end(pg_connection, db):
+def test_notification_context_is_cleared_after_transaction_end(
+    pg_connection, db, settings
+):
+    settings.PGPUBSUB_TX_BOUND_NOTIFICATION_CONTEXT = True
     with atomic():
         pgpubsub.set_notification_context({'test_key': 'test-value'}, using=db)
 

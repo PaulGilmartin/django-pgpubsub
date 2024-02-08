@@ -245,10 +245,23 @@ def set_notification_context(
         conn = connection
     if conn.needs_rollback:
         return
+    use_tx_bound_notification_context = getattr(
+        settings, 'PGPUBSUB_TX_BOUND_NOTIFICATION_CONTEXT', False
+    )
+    if use_tx_bound_notification_context and not conn.in_atomic_block:
+        raise RuntimeError(
+            'Transaction bound context can be only set in atomic block. '
+            'Either start transaction with `atomic` or do not use transaction bound '
+            'payload context via PGPUBSUB_TX_BOUND_NOTIFICATION_CONTEXT=False'
+        )
     with conn.cursor() as cursor:
         try:
+            if use_tx_bound_notification_context:
+                scope = 'LOCAL'
+            else:
+                scope = 'SESSION'
             cursor.execute(
-                "SET LOCAL pgpubsub.notification_context = %s",
+                f'SET {scope} pgpubsub.notification_context = %s',
                 (json.dumps(context),)
             )
         except InternalError as e:
