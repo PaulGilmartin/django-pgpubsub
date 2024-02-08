@@ -31,7 +31,9 @@ passed using ``pgpubsub.set_notification_context`` function.
 
     set_notification_context({'some-key': 'some-value'})
 
-The setting is effective till the end of the current transanction.
+The setting is effective till the connection is closed. Alternatively the setting
+``PGPUBSUB_TX_BOUND_NOTIFICATION_CONTEXT`` can be used to clean the context at the end 
+of the current transanction.
 
 
 Filter by ``context`` field in the trigger listener
