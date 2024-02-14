@@ -18,7 +18,6 @@ class Notify(pgtrigger.Trigger):
     def get_declare(self, model: Type[Model]):
         return [
             ('payload', 'JSONB'),
-            ('notification_context', 'JSONB'),
             ('notification_context_text', 'TEXT'),
         ]
 

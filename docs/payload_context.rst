@@ -31,16 +31,19 @@ passed using ``pgpubsub.set_notification_context`` function.
 
     set_notification_context({'some-key': 'some-value'})
 
-The setting is effective till the connection is closed. Alternatively the setting
-``PGPUBSUB_TX_BOUND_NOTIFICATION_CONTEXT`` can be used to clean the context at the end 
-of the current transanction.
+The setting is effective till the connection is closed. Alternatively the
+setting ``PGPUBSUB_TX_BOUND_NOTIFICATION_CONTEXT=True`` can be used to clean
+the context at the end of the current transanction.
 
 
 Filter by ``context`` field in the trigger listener
 ---------------------------------------------------
 
-Define a class that implements ``ListenerFilterProvider`` protocol and set
-option ``PGPUBSUB_LISTENER_FILTER`` to its fully qualified class name.
+Note: that the filtering is currently supported only for stored notifications that is
+only for channels with ``lock_notifications = True``.
+
+Define a class that implements the ``ListenerFilterProvider`` protocol and set
+the option ``PGPUBSUB_LISTENER_FILTER`` to its fully qualified class name.
 
 .. code-block:: python
 
