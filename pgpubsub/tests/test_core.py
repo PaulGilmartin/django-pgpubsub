@@ -1,5 +1,4 @@
 import datetime
-import json
 from unittest.mock import patch
 
 from django.db import connection
@@ -59,6 +58,20 @@ def test_author_insert_notify(pg_connection):
     post = Post.objects.last()
     assert post.author == author
 
+@pytest.mark.django_db(transaction=True)
+def test_process_notifications_handles_non_json_payloads(pg_connection):
+    author = Author.objects.create(name='Billy')
+    assert 1 == len(pg_connection.notifies)
+    stored_notification = Notification.from_channel(
+        channel=AuthorTriggerChannel).get()
+    with connection.cursor() as cursor:
+        cursor.execute(f"UPDATE {Notification._meta.db_table} SET payload = to_json(payload::text)")
+
+    assert not Post.objects.exists()
+    process_notifications(pg_connection)
+    assert 1 == Post.objects.count()
+    post = Post.objects.last()
+    assert post.author == author
 
 @pytest.mark.django_db(transaction=True)
 def test_author_insert_notify_in_transaction(pg_connection):
@@ -167,9 +180,7 @@ def test_recover_multiple_notifications(pg_connection):
 
 def _create_notification_that_cannot_be_processed():
     notification = Notification.objects.last()
-    payload = json.loads(notification.payload)
-    payload.pop('app', None)
-    notification.payload = json.dumps(payload)
+    notification.payload.pop('app', None)
     notification.pk = None
     notification.save()
 

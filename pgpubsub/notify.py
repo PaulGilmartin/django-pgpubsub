@@ -32,7 +32,7 @@ def notify(channel: Union[Type[Channel], str], **kwargs):
 def process_stored_notifications(channels=None):
     """Have processes listening to channels process current stored notifications.
 
-    This function sends a notification with an 'null' payload to all listening channels.
+    This function sends a notification with an empty payload to all listening channels.
     The result of this is to have the channels process all notifications
     currently in the database. This can be useful if for some reason
     a Notification object was not correctly processed after it initially
@@ -51,7 +51,7 @@ def process_stored_notifications(channels=None):
     with connection.cursor() as cursor:
         lock_channels = [c for c in channels if c.lock_notifications]
         for channel_cls in lock_channels:
-            payload = 'null'
+            payload = ''
             logger.info(
                 f'Notifying channel {channel_cls.name()} to recover '
                 f'previously stored notifications.\n')

@@ -17,8 +17,8 @@ MAX_POSTGRES_CHANNEL_LENGTH = 63
 class Notification(models.Model):
     channel = models.CharField(max_length=MAX_POSTGRES_CHANNEL_LENGTH)
     payload = JSONField()
-    # The field is made nullable to make sure the addiion of the new field is backward
-    # compatible. From the version this change is release the field is effectively non
+    # The field is made nullable to make sure the addition of the new field is backward
+    # compatible. From the version this change is released the field is effectively non
     # nullable as in it always gets a value.
     # After some time the field should be made non nullable here.
     created_at = models.DateTimeField(auto_now_add=True, null=True)
@@ -36,7 +36,7 @@ class Notification(models.Model):
                     NEW.db_version := (
                         SELECT max(id)
                         FROM django_migrations
-                        WHERE app = ((NEW.payload #>> '{}')::jsonb ->> 'app')
+                        WHERE app = NEW.payload ->> 'app'
                     );
                     NEW.created_at := NOW();
                     RETURN NEW;
