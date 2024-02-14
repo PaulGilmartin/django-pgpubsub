@@ -6,6 +6,7 @@ from typing import List, Optional, Union
 
 from django.core.management import execute_from_command_line
 from django.db import connection, transaction
+from django.db.models import Func, Value, Q
 from psycopg2._psycopg import Notify
 
 from pgpubsub import process_stored_notifications
@@ -149,10 +150,14 @@ class NotificationProcessor:
         self.pg_connection.poll()
 
 
+class CastToJSONB(Func):
+    template = '((%(expressions)s)::jsonb)'
+
+
 class LockableNotificationProcessor(NotificationProcessor):
 
     def validate(self):
-        if self.notification.payload == 'null':
+        if self.notification.payload == '':
             raise InvalidNotificationProcessor
 
     def process(self):
@@ -161,8 +166,9 @@ class LockableNotificationProcessor(NotificationProcessor):
         notification = (
             Notification.objects.select_for_update(
                 skip_locked=True).filter(
+                Q(payload=CastToJSONB(Value(self.notification.payload)))
+                    | Q(payload=self.notification.payload),
                 channel=self.notification.channel,
-                payload=self.notification.payload,
             ).first()
         )
         if notification is None:
@@ -178,7 +184,7 @@ class LockableNotificationProcessor(NotificationProcessor):
 class NotificationRecoveryProcessor(LockableNotificationProcessor):
 
     def validate(self):
-        if self.notification.payload != 'null':
+        if self.notification.payload != '':
             raise InvalidNotificationProcessor
 
     def process(self):
