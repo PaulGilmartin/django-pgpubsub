@@ -1,0 +1,17 @@
+name: Unit Tests
+
+on: [pull_request]
+
+jobs:
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Start docker container
+        run: docker compose up -d app
+      - name: Copy root pyproject.toml file
+        run: docker compose cp pyproject.toml app:app/pyproject.toml
+      - name: Run tests using bob container
+        run: docker compose exec -T app pytest
+      - name: Stop containers
+        run: docker compose down
