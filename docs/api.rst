@@ -18,6 +18,9 @@ Channels
 Listeners
 ---------
 
+.. autoclass:: pgpubsub.ListenerFilterProvider
+
+
 .. autofunction:: pgpubsub.listener
 
 
@@ -46,6 +49,9 @@ Listeners
 
 
 .. autofunction:: pgpubsub.trigger_listener
+
+
+.. autofunction:: pgpubsub.set_notification_context
 
 
 Notifiers

@@ -21,8 +21,8 @@ by supplying it with the ``--recover`` option. This will tell the listening proc
 any missed stored notifications automatically when it starts up.
 
 
-Note that this recovery option can be enabled whenever we use the `listen` management command
-by supplying it with the `--recover` option. This will tell the listening processes to replay
+Note that this recovery option can be enabled whenever we use the ``listen`` management command
+by supplying it with the ``--recover`` option. This will tell the listening processes to replay
 any missed stored notifications automatically when it starts up.
 
 It is important to enable server side cursors in the django settings used by
