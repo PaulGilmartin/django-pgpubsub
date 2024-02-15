@@ -1,18 +1,20 @@
+import datetime
 import hashlib
+import inspect
+import json
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
 from decimal import Decimal
-import datetime
-import inspect
-import json
 from pydoc import locate
-from typing import Callable, Dict, Union, List
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from django.apps import apps
+from django.conf import settings
 from django.core import serializers
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db import models
+from django.db import connection, connections, models
+from django.db.utils import InternalError
 
 
 registry = defaultdict(list)
@@ -143,6 +145,20 @@ class TriggerChannel(BaseChannel):
     model = NotImplementedError
     old: models.Model
     new: models.Model
+    context: Optional[Dict[str, Any]] = None
+
+    @classmethod
+    def pass_context_to_listeners(cls) -> bool:
+        return getattr(settings, 'PGPUBSUB_PASS_CONTEXT_TO_LISTENERS', False)
+
+    @property
+    def signature(self):
+        return {
+            k: v for k, v in self.__dict__.items()
+            if k in self.__dataclass_fields__ and (
+                k != 'context' or self.pass_context_to_listeners()
+            )
+        }
 
     @classmethod
     def deserialize(cls, payload: Union[Dict, str]):
@@ -167,7 +183,10 @@ class TriggerChannel(BaseChannel):
         new = next(new_deserialized_objects, None)
         if new is not None:
             new = new.object
-        return {'old': old, 'new': new}
+        fields = {'old': old, 'new': new}
+        if cls.pass_context_to_listeners():
+            fields['context'] = payload_dict.get('context', {})
+        return fields
 
     @classmethod
     def _build_model_serializer_data(cls, payload: Dict, state: str):
@@ -211,6 +230,45 @@ class TriggerChannel(BaseChannel):
                 serialized['fields'][pk.remote_field.model._meta.pk.name] = serialized['pk']
             model_data.append(serialized)
         return model_data
+
+
+TX_ABORTED_ERROR_MESSAGE = (
+    'current transaction is aborted, commands ignored until end of transaction block'
+)
+
+def set_notification_context(
+    context: Dict[str, Any], using: Optional[str] = None
+) -> None:
+    if using:
+        conn = connections[using]
+    else:
+        conn = connection
+    if conn.needs_rollback:
+        return
+    use_tx_bound_notification_context = getattr(
+        settings, 'PGPUBSUB_TX_BOUND_NOTIFICATION_CONTEXT', False
+    )
+    if use_tx_bound_notification_context and not conn.in_atomic_block:
+        raise RuntimeError(
+            'Transaction bound context can be only set in atomic block. '
+            'Either start transaction with `atomic` or do not use transaction bound '
+            'payload context via PGPUBSUB_TX_BOUND_NOTIFICATION_CONTEXT=False'
+        )
+    with conn.cursor() as cursor:
+        try:
+            if use_tx_bound_notification_context:
+                scope = 'LOCAL'
+            else:
+                scope = 'SESSION'
+            cursor.execute(
+                f'SET {scope} pgpubsub.notification_context = %s',
+                (json.dumps(context),)
+            )
+        except InternalError as e:
+            if TX_ABORTED_ERROR_MESSAGE in str(e):
+                return
+            else:
+                raise
 
 
 def locate_channel(channel):
