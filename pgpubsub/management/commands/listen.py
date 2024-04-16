@@ -38,7 +38,7 @@ class Command(BaseCommand):
                 "A method ('spawn', 'fork') used to start a worker "
                 "listener process. 'fork' is the quickest on POSIX systems but unsafe "
                 "if other threads are started during django initialization and/or from "
-                "the listener callbacks.",
+                "the listener callbacks."
             ),
         )
         parser.add_argument(
@@ -63,7 +63,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--logformat",
             default="%(asctime)s %(levelname).4s %(message)s",
-            help="Provide logging format. Example --logformat '%(asctime)s %(levelname)s %(message)s'",
+            help="Provide logging format. Example --logformat '%%(asctime)s %%(levelname)s %%(message)s'",
         )
 
     def handle(self, *args, **options):
