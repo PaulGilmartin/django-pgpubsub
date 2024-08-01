@@ -4,7 +4,7 @@ services:
   db:
     image: postgres:13
     volumes:
-      - ./.db:/var/lib/postgresql/data
+      - ./.db:/var/lib/postgresql/data:z
     environment:
       - POSTGRES_NAME=postgres
       - POSTGRES_USER=postgres
