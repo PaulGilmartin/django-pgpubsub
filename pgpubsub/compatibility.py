@@ -1,5 +1,9 @@
+import os
 
 try:
+    if os.getenv('PGPUBSUB_USE_PSYCOPG_V3', 'False') == 'True':
+        raise ImportError()
+
     from psycopg2._psycopg import Notify
 
     class ConnectionWrapper:
