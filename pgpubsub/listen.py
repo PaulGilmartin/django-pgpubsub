@@ -9,7 +9,6 @@ from django.conf import settings
 from django.core.management import execute_from_command_line
 from django.db import connection, transaction
 from django.db.models import Func, Value, Q
-from psycopg2._psycopg import Notify
 
 from pgpubsub import process_stored_notifications
 from pgpubsub.channel import (
@@ -19,6 +18,7 @@ from pgpubsub.channel import (
     locate_channel,
     registry,
 )
+from pgpubsub.compatibility import ConnectionWrapper, Notify
 from pgpubsub.listeners import ListenerFilterProvider
 from pgpubsub.models import Notification
 
@@ -65,32 +65,36 @@ def start_listen_in_a_process(
     return process
 
 
+
 def listen(
     channels: Union[List[BaseChannel], List[str]] = None,
     recover: bool = False,
     autorestart_on_failure: bool = True,
     start_method: str = 'spawn',
 ):
-    pg_connection = listen_to_channels(channels)
+    connection_wrapper = listen_to_channels(channels)
 
-    if recover:
-        process_stored_notifications(channels)
-        process_notifications(pg_connection)
+    try:
+        if recover:
+            process_stored_notifications(channels)
+            process_notifications(connection_wrapper)
 
-    logger.info('Listening for notifications... \n')
-    while POLL:
-        if select.select([pg_connection], [], [], 1) == ([], [], []):
-            pass
-        else:
-            try:
-                process_notifications(pg_connection)
-            except Exception as e:
-                logger.error(f'Encountered exception {e}', exc_info=e)
-                if autorestart_on_failure:
-                    start_listen_in_a_process(
-                        channels, recover, autorestart_on_failure, start_method
-                    )
-                raise
+        logger.info('Listening for notifications... \n')
+        while POLL:
+            if select.select([connection_wrapper.connection], [], [], 1) == ([], [], []):
+                pass
+            else:
+                try:
+                    process_notifications(connection_wrapper)
+                except Exception as e:
+                    logger.error(f'Encountered exception {e}', exc_info=e)
+                    if autorestart_on_failure:
+                        start_listen_in_a_process(
+                            channels, recover, autorestart_on_failure, start_method
+                        )
+                    raise
+    finally:
+        connection_wrapper.stop()
 
 
 def listen_to_channels(channels: Union[List[BaseChannel], List[str]] = None):
@@ -109,13 +113,13 @@ def listen_to_channels(channels: Union[List[BaseChannel], List[str]] = None):
     for channel in channels:
         logger.info(f'Listening on {channel.name()}\n')
         cursor.execute(f'LISTEN {channel.listen_safe_name()};')
-    return connection.connection
+    return ConnectionWrapper(connection.connection)
 
 
-def process_notifications(pg_connection):
-    pg_connection.poll()
-    while pg_connection.notifies:
-        notification = pg_connection.notifies.pop(0)
+def process_notifications(connection_wrapper):
+    connection_wrapper.poll()
+    while connection_wrapper.notifies:
+        notification = connection_wrapper.notifies.pop(0)
         with transaction.atomic():
             for processor in [
                 NotificationProcessor,
@@ -123,7 +127,7 @@ def process_notifications(pg_connection):
                 NotificationRecoveryProcessor,
             ]:
                 try:
-                    processor = processor(notification, pg_connection)
+                    processor = processor(notification, connection_wrapper)
                 except InvalidNotificationProcessor:
                     continue
                 else:
@@ -132,10 +136,10 @@ def process_notifications(pg_connection):
 
 
 class NotificationProcessor:
-    def __init__(self, notification: Notify, pg_connection):
+    def __init__(self, notification: Notify, connection_wrapper):
         self.notification = notification
         self.channel_cls, self.callbacks = Channel.get(notification.channel)
-        self.pg_connection = pg_connection
+        self.connection_wrapper = connection_wrapper
         self.validate()
 
     def validate(self):
@@ -150,7 +154,7 @@ class NotificationProcessor:
         channel = self.channel_cls.build_from_payload(
             self.notification.payload, self.callbacks)
         channel.execute_callbacks()
-        self.pg_connection.poll()
+        self.connection_wrapper.poll()
 
 
 class CastToJSONB(Func):
