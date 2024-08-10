@@ -13,5 +13,7 @@ jobs:
         run: docker compose cp pyproject.toml app:app/pyproject.toml
       - name: Run tests using bob container
         run: docker compose exec -T app pytest
+      - name: Check that the help command is working properly
+        run: docker compose exec -T app python manage.py listen -h
       - name: Stop containers
         run: docker compose down

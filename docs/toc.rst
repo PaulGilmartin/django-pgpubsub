@@ -21,6 +21,7 @@ Table of Contents
    exactly_once_messaging
    recovery
    metrics
+   payload_context
 
 
 .. toctree::
