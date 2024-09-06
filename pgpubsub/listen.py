@@ -53,6 +53,7 @@ def start_listen_in_a_process(
         if not autorestart_on_failure:
             args.append('--no-restart-on-failure')
         if channels:
+            args.append('--channels')
             args.extend(channels)
         logger.debug(f'  with {args=}')
         process = multiprocessing.Process(
