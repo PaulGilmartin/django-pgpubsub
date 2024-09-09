@@ -111,9 +111,12 @@ def listen_to_channels(channels: Union[List[BaseChannel], List[str]] = None):
     if not channels:
         raise ChannelNotFound()
     cursor = connection.cursor()
-    for channel in channels:
-        logger.info(f'Listening on {channel.name()}\n')
-        cursor.execute(f'LISTEN {channel.listen_safe_name()};')
+    # Notifications are started to being delivered only after the transaction commits.
+    # Check LISTEN documentation for detailed description.
+    with transaction.atomic():
+        for channel in channels:
+            logger.info(f'Listening on {channel.name()}\n')
+            cursor.execute(f'LISTEN {channel.listen_safe_name()};')
     return ConnectionWrapper(connection.connection)
 
 
