@@ -53,6 +53,9 @@ Highlights
 - **Lightweight Polling**: we make use of the Postgres ``LISTEN/NOTIFY``
   protocol to have achieve notification polling which uses
   `no CPU and no database transactions unless there is a message to read. <https://www.psycopg.org/docs/advanced.html#asynchronous-notifications>`__
+  (Note: This is true when using the `psycopg2` library, which is the default. `psycopg3` is supported,
+   but polling incurs a small CPU cost to fetch the notifications.
+   We hope to fix this in the future once `psycopg3` makes it easier to poll for notifications client side).
 
 - **Exactly-once notification processing**: ``django-pgpubsub`` can be configured so
   that notifications are processed exactly once. This is achieved by storing
