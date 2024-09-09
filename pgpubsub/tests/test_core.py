@@ -106,9 +106,6 @@ def test_author_bulk_insert_notify(pg_connection):
     with atomic():
         authors = Author.objects.bulk_create(authors)
 
-    # TODO: Understand why pg_connection.poll() is only
-    # necessary when we invoke a notification inside
-    # a transaction (which happens in a bulk_create).
     pg_connection.poll()
     assert 2 == len(pg_connection.notifies)
     assert not Post.objects.exists()

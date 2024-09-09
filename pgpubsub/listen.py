@@ -117,10 +117,19 @@ def listen_to_channels(channels: Union[List[BaseChannel], List[str]] = None):
     return ConnectionWrapper(connection.connection)
 
 
+def fetch_notifications(connection_wrapper):
+    need_to_poll = True
+    while need_to_poll:
+        connection_wrapper.poll()
+        need_to_poll = False
+        while connection_wrapper.notifies:
+            notification = connection_wrapper.notifies.pop(0)
+            yield notification
+            need_to_poll = True
+
+
 def process_notifications(connection_wrapper):
-    connection_wrapper.poll()
-    while connection_wrapper.notifies:
-        notification = connection_wrapper.notifies.pop(0)
+    for notification in fetch_notifications(connection_wrapper):
         with transaction.atomic():
             for processor in [
                 NotificationProcessor,
@@ -155,7 +164,6 @@ class NotificationProcessor:
         channel = self.channel_cls.build_from_payload(
             self.notification.payload, self.callbacks)
         channel.execute_callbacks()
-        self.connection_wrapper.poll()
 
 
 class CastToJSONB(Func):
