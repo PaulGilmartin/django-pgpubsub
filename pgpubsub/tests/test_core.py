@@ -106,6 +106,8 @@ def test_author_bulk_insert_notify(pg_connection):
     with atomic():
         authors = Author.objects.bulk_create(authors)
 
+    # this poll is needed to workaround the bug in psycop2
+    # https://github.com/psycopg/psycopg2/issues/1727
     pg_connection.poll()
     assert 2 == len(pg_connection.notifies)
     assert not Post.objects.exists()
