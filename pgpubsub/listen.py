@@ -38,7 +38,7 @@ def start_listen_in_a_process(
     multiprocessing.set_start_method(start_method, force=True)
     logger.info('Restarting process')
     if channels:
-        channels = [c if isinstance(str, c) else c.name() for c in channels]
+        channels = [c if isinstance(c, str) else c.name() for c in channels]
     if start_method == 'fork':
         logger.debug('  using fork')
         process = multiprocessing.Process(
@@ -53,6 +53,7 @@ def start_listen_in_a_process(
         if not autorestart_on_failure:
             args.append('--no-restart-on-failure')
         if channels:
+            args.append('--channels')
             args.extend(channels)
         logger.debug(f'  with {args=}')
         process = multiprocessing.Process(
