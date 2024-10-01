@@ -5,9 +5,9 @@ from unittest.mock import Mock
 
 import pytest
 from django.db import transaction
-from psycopg2._psycopg import Notify
 
 from pgpubsub.channel import registry
+from pgpubsub.compatibility import Notify
 from pgpubsub.listen import (
     FullPayloadLockableNotificationProcessor,
     InvalidNotificationProcessor,
