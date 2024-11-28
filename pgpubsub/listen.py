@@ -213,7 +213,7 @@ class FullPayloadLockableNotificationProcessor(NotificationProcessor):
         )
         if notification is None:
             logger.info(f'Could not obtain a lock on notification '
-                        f'{self.notification.pid}\n')
+                        f'{self.notification.id}\n')
         else:
             logger.info(f'Obtained lock on {notification}')
             self.notification = notification
@@ -239,7 +239,7 @@ class LockableNotificationProcessor(NotificationProcessor):
         )
         if notification is None:
             logger.info(f'Could not obtain a lock on notification '
-                        f'{self.notification.pid}\n')
+                        f'{self.notification.id}\n')
         else:
             logger.info(f'Obtained lock on {notification}')
             self.notification = notification
