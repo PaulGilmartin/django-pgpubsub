@@ -1,4 +1,6 @@
-from pgpubsub.channel import Channel, TriggerChannel, set_notification_context
+from pgpubsub.channel import (
+    Channel, TriggerChannel, set_notification_context, update_notification_context
+)
 from pgpubsub.listeners import (
     listener,
     pre_save_listener,

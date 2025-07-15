@@ -46,12 +46,48 @@ def test_notification_context_is_stored_in_payload(
     else:
         settings.PGPUBSUB_TX_BOUND_NOTIFICATION_CONTEXT = tx_bound_context
 
-    pgpubsub.set_notification_context({'test_key': 'test-value'},
-                                        using=db_alias)
+    pgpubsub.set_notification_context({'test_key': 'test-value'}, using=db_alias)
     Media.objects.create(name='avatar.jpg', content_type='image/png', size=15000)
 
     stored_notification = Notification.from_channel(channel=MediaTriggerChannel).get()
     assert stored_notification.payload['context'] == {'test_key': 'test-value'}
+
+    pg_connection.poll()
+    assert 1 == len(pg_connection.notifies)
+
+@pytest.mark.parametrize("db_alias", [None, "default"])
+@pytest.mark.parametrize("tx_bound_context", [None, False])
+@pytest.mark.django_db(transaction=True)
+def test_update_notification_context(
+    pg_connection, settings, db_alias, tx_bound_context, clear_notification_context
+):
+    if tx_bound_context is None:
+        delattr(settings, 'PGPUBSUB_TX_BOUND_NOTIFICATION_CONTEXT')
+    else:
+        settings.PGPUBSUB_TX_BOUND_NOTIFICATION_CONTEXT = tx_bound_context
+    pgpubsub.set_notification_context(
+        {
+            'test_key_kept': 'test-value-kept',
+            'test_key_updated': 'test-value-initial',
+            'test_key_removed': 'test-value-removed',
+        },
+        using=db_alias,
+    )
+
+    pgpubsub.update_notification_context(
+        lambda ctx: (
+            {k:v for k, v in ctx.items() if k != 'test_key_removed'}
+            | {'test_key_updated': 'test-value-updated'}
+        ),
+        using=db_alias,
+    )
+    Media.objects.create(name='avatar.jpg', content_type='image/png', size=15000)
+
+    stored_notification = Notification.from_channel(channel=MediaTriggerChannel).get()
+    assert stored_notification.payload['context'] == {
+        'test_key_kept': 'test-value-kept',
+        'test_key_updated': 'test-value-updated',
+    }
 
     pg_connection.poll()
     assert 1 == len(pg_connection.notifies)
