@@ -6,6 +6,8 @@ from django.db.transaction import atomic
 from django.db.migrations.recorder import MigrationRecorder
 import pytest
 
+from pgpubsub.notify import notify
+
 from pgpubsub.listen import (
     process_notifications,
     listen,
@@ -14,6 +16,7 @@ from pgpubsub.models import Notification
 from pgpubsub.notify import process_stored_notifications
 from pgpubsub.tests.channels import (
     AuthorTriggerChannel,
+    LockableChannel,
     MediaTriggerChannel,
 )
 from pgpubsub.tests.connection import simulate_listener_does_not_receive_notifications
@@ -129,7 +132,7 @@ def test_process_stored_notifications(pg_connection):
     process_stored_notifications()
     pg_connection.poll()
     # One notification for each lockable channel
-    assert 5 == len(pg_connection.notifies)
+    assert 6 == len(pg_connection.notifies)
     process_notifications(pg_connection)
     assert 0 == Notification.objects.count()
     assert 2 == Post.objects.count()
@@ -236,6 +239,26 @@ def test_persistent_notification_has_a_creation_timestamp(pg_connection, tx_star
     assert 1 == len(pg_connection.notifies)
     stored_notification = Notification.from_channel(channel=MediaTriggerChannel).get()
     assert stored_notification.created_at >= tx_start_time
+
+
+@pytest.mark.xfail(reason="Not yet fixed")
+@pytest.mark.django_db(transaction=True)
+def test_lockable_channel_notify_stored_as_object(pg_connection):
+    notify(LockableChannel, pk=42)
+    n = Notification.objects.get()
+    assert isinstance(n.payload, dict), (
+        f"payload should be a dict; got {type(n.payload)}: {n.payload!r}"
+    )
+
+
+@pytest.mark.xfail(reason="Not yet fixed")
+@pytest.mark.django_db(transaction=True)
+def test_lockable_channel_live_delivery(pg_connection):
+    notify(LockableChannel, pk=99)
+    assert Notification.objects.count() == 1
+    pg_connection.poll()
+    process_notifications(pg_connection)
+    assert Notification.objects.count() == 0
 
 
 @pytest.mark.django_db(transaction=True)
