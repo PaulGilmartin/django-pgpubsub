@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Type, Union
 
@@ -23,8 +24,8 @@ def notify(channel: Union[Type[Channel], str], **kwargs):
         if channel_cls.lock_notifications:
             from pgpubsub.models import Notification
             Notification.objects.create(
-                channel=name,
-                payload=serialized,
+                channel=channel_cls.listen_safe_name(),
+                payload=json.loads(serialized),
             )
     return serialized
 

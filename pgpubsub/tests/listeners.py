@@ -9,6 +9,7 @@ from pgpubsub.tests.channels import (
     AuthorTriggerChannel,
     ChildOfAbstractTriggerChannel,
     ChildTriggerChannel,
+    LockableChannel,
     MediaTriggerChannel,
     PostReads,
     PostTriggerChannel,
@@ -69,6 +70,11 @@ def email_author(old: Post, new: Post):
 
 
 def email(author: Author):
+    pass
+
+
+@pgpubsub.listener(LockableChannel)
+def noop_lockable(pk: int):
     pass
 
 

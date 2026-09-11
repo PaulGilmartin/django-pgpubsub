@@ -45,3 +45,9 @@ class AuthorTriggerChannel(TriggerChannel):
 class PostTriggerChannel(TriggerChannel):
     model = Post
     lock_notifications = True
+
+
+@dataclass
+class LockableChannel(Channel):
+    lock_notifications = True
+    pk: int
