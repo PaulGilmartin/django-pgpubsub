@@ -241,7 +241,6 @@ def test_persistent_notification_has_a_creation_timestamp(pg_connection, tx_star
     assert stored_notification.created_at >= tx_start_time
 
 
-@pytest.mark.xfail(reason="Not yet fixed")
 @pytest.mark.django_db(transaction=True)
 def test_lockable_channel_notify_stored_as_object(pg_connection):
     notify(LockableChannel, pk=42)
@@ -251,7 +250,6 @@ def test_lockable_channel_notify_stored_as_object(pg_connection):
     )
 
 
-@pytest.mark.xfail(reason="Not yet fixed")
 @pytest.mark.django_db(transaction=True)
 def test_lockable_channel_live_delivery(pg_connection):
     notify(LockableChannel, pk=99)
